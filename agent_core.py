@@ -4,7 +4,7 @@ import json
 import requests
 from datetime import datetime
 from pytrends.request import TrendReq
-import openai  # Use the standard openai package
+import openai
 
 class FiverrTShirtAgent:
     def __init__(self):
@@ -12,14 +12,50 @@ class FiverrTShirtAgent:
         self.chat_id = os.getenv('TELEGRAM_CHAT_ID')
         self.openrouter_key = os.getenv('OPENROUTER_API_KEY')
         
-       # Configure for OpenRouter
-       openai.api_base = "https://openrouter.ai/api/v1"
-       openai.api_key = os.getenv('OPENROUTER_API_KEY')
-       openai.organization = ""  # OpenRouter requires this field
+        # Configure OpenAI client for OpenRouter API - CORRECTED URL
+        openai.api_base = "https://openrouter.ai/api/v1"
+        openai.api_key = self.openrouter_key
+        openai.organization = ""
         
         self.trends = TrendReq(hl='en-US', tz=360)
         
-    # Rest of your code remains the same, but replace OpenRouter calls with openai calls
+    def send_telegram(self, message):
+        """Send notification to your Telegram"""
+        url = f"https://api.telegram.org/bot{self.telegram_token}/sendMessage"
+        payload = {
+            'chat_id': self.chat_id,
+            'text': message,
+            'parse_mode': 'HTML'
+        }
+        try:
+            requests.post(url, json=payload)
+        except Exception as e:
+            print(f"Telegram failed: {e}")
+    
+    def research_trends(self):
+        """Research trending topics for T-shirt designs"""
+        try:
+            self.trends.build_payload(kw_list=["t-shirt design", "graphic tee", "custom shirt"], 
+                                    timeframe='today 1-m', geo='US')
+            related_queries = self.trends.related_queries()
+            
+            rising = related_queries["t-shirt design"]["rising"]
+            top_trends = rising.head(5)['query'].tolist() if not rising.empty else [
+                "retro gaming", "cottagecore aesthetic", "cyberpunk minimalism"
+            ]
+            
+            return {
+                'trends': top_trends,
+                'colors': ["millennial pink", "sage green", "terracotta"],
+                'styles': ["minimalist", "vintage", "geometric"]
+            }
+        except Exception as e:
+            print(f"Trend research failed: {e}")
+            return {
+                'trends': ["retro gaming", "motivational quotes", "abstract art"],
+                'colors': ["black", "white", "neon accents"],
+                'styles': ["minimalist", "typography", "line art"]
+            }
     
     def generate_gig_content(self, trends_data):
         """Generate Fiverr gig content suggestions using MiniMax M2"""
@@ -38,35 +74,15 @@ class FiverrTShirtAgent:
         
         try:
             # Use OpenAI-compatible API for OpenRouter
-            completion = openai.chat.completions.create(
+            completion = openai.ChatCompletion.create(
                 model="minimax/minimax-m2:free",
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.7,
                 max_tokens=300
             )
-            return completion.choices[0].message.content
+            return completion.choices[0].message['content']
         except Exception as e:
             print(f"OpenRouter API failed: {e}")
-            return """
-            🎯 GIG TITLE: Trending minimalist t-shirt designs for your brand
-            📝 SHORT DESCRIPTION: I create viral-worthy t-shirt graphics that sell
-            📦 PACKAGE IDEAS: 
-            • Basic ($15): 1 design concept, 2 revisions
-            • Standard ($30): 3 concepts, unlimited revisions  
-            • Premium ($50): 5 concepts + mockups, 24hr delivery
-            🔍 SEO KEYWORDS: tshirt design, custom graphic tee, minimalist shirt design, viral tshirt, brand apparel
-            """
-        
-        try:
-            completion = self.openrouter.completion(
-                model="minimax/minimax-m2:free",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.7,
-                max_tokens=300
-            )
-            return completion.choices[0].message.content
-        except Exception as e:
-            print(f"OpenRouter failed: {e}")
             return """
             🎯 GIG TITLE: Trending minimalist t-shirt designs for your brand
             📝 SHORT DESCRIPTION: I create viral-worthy t-shirt graphics that sell
