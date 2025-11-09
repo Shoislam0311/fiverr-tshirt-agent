@@ -172,7 +172,7 @@ class ProductionFiverrAgent:
                 'source': 'critical_fallback'
             }
     
-    def generate_gig_content(self, trends_ Dict[str, Any]) -> str:
+    def generate_gig_content(self, trends_data: Dict[str, Any]) -> str:
         """Generate Fiverr gig content with robust error handling - FIXED FOR OPENAI v1.0+"""
         try:
             logger.info("📝 Generating Fiverr gig content...")
@@ -234,7 +234,7 @@ class ProductionFiverrAgent:
             logger.error(f"❌ Failed to generate gig content: {str(e)}")
             return self._get_fallback_gig_content(trends_data)
     
-    def _get_fallback_gig_content(self, trends_ Dict[str, Any]) -> str:
+    def _get_fallback_gig_content(self, trends_data: Dict[str, Any]) -> str:
         """Fallback gig content when API fails"""
         top_trends = [trend.get('query', 'trending design') for trend in trends_data.get('trends', [])[:2]]
         return f"""
@@ -252,7 +252,7 @@ class ProductionFiverrAgent:
         ⏰ TURNAROUND: Most orders delivered within 24 hours - limited slots available today!
         """
     
-    def generate_trending_prompts(self, trends_ Dict[str, Any]) -> List[str]:
+    def generate_trending_prompts(self, trends_data: Dict[str, Any]) -> List[str]:
         """Generate Puter.js prompts for trending designs"""
         try:
             top_trends = [trend.get('query', 'cool design') for trend in trends_data.get('trends', [])[:3]]
@@ -329,7 +329,7 @@ class ProductionFiverrAgent:
             self.send_telegram(failure_report)
             return False
     
-    def _create_agent_report(self, trends_ Dict[str, Any], gig_content: str, 
+    def _create_agent_report(self, trends_data: Dict[str, Any], gig_content: str, 
                            design_prompts: List[str], start_time: datetime) -> str:
         """Create comprehensive, production-ready agent report"""
         duration = (datetime.now() - start_time).total_seconds()
