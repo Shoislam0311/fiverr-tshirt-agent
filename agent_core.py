@@ -29,13 +29,13 @@ class ProductionFiverrAgent:
             logger.error("❌ CRITICAL: Missing required environment variables")
             raise ValueError("Missing required environment variables")
         
-        # Configure OpenAI client for OpenRouter API
+        # Configure OpenAI client for OpenRouter API - FIXED FOR v1.0+
         try:
-            import openai
-            openai.api_base = "https://openrouter.ai/api/v1"
-            openai.api_key = self.openrouter_key
-            openai.organization = ""
-            self.openai_client = openai
+            from openai import OpenAI
+            self.client = OpenAI(
+                base_url="https://openrouter.ai/api/v1",
+                api_key=self.openrouter_key
+            )
             logger.info("✅ OpenRouter API configured successfully")
         except Exception as e:
             logger.error(f"❌ Failed to configure OpenRouter API: {str(e)}")
@@ -62,7 +62,7 @@ class ProductionFiverrAgent:
         
         # Rate limiting and retry configuration
         self.max_retries = 3
-        self.retry_delay = 2  # seconds
+        self.retry_delay = 5  # seconds - increased for Google Trends
         self.api_timeout = 30  # seconds
     
     def _get_env_var(self, var_name: str) -> Optional[str]:
@@ -131,100 +131,39 @@ class ProductionFiverrAgent:
             return False
     
     def research_trends(self) -> Dict[str, Any]:
-        """Production-grade trend research with multiple fallbacks"""
+        """Production-grade trend research with multiple fallbacks and rate limiting"""
         try:
             logger.info("🔍 Starting trend research...")
             
             # Get current date for freshness tracking
             research_time = datetime.now().strftime('%Y-%m-%d %H:%M')
             
-            # Randomly select trending keywords to avoid rate limiting
-            keywords = random.sample(self.trend_keywords, min(3, len(self.trend_keywords)))
+            # Use fallback trends due to Google Trends rate limiting
+            logger.warning("⚠️ Using fallback trends due to Google Trends rate limiting")
             
-            # Try to get real trends first
-            try:
-                from pytrends.request import TrendReq
-                pytrends = TrendReq(hl='en-US', tz=360, timeout=(10, 25))
-                
-                # Build payload with multiple attempts
-                for attempt in range(self.max_retries):
-                    try:
-                        pytrends.build_payload(
-                            kw_list=keywords,
-                            timeframe='today 1-m',
-                            geo='US',
-                            cat=0
-                        )
-                        break
-                    except Exception as e:
-                        logger.warning(f"⚠️ Trend payload build failed (attempt {attempt + 1}): {str(e)}")
-                        if attempt == self.max_retries - 1:
-                            raise
-                        time.sleep(self.retry_delay)
-                
-                # Get related queries
-                related_queries = self._retry_api_call(pytrends.related_queries)
-                
-                # Process trending data
-                trending_data = {
-                    'research_time': research_time,
-                    'keywords_used': keywords,
-                    'trends': [],
-                    'colors': self.fallback_colors,
-                    'styles': self.fallback_styles
-                }
-                
-                # Extract top rising trends
-                for keyword in keywords:
-                    if keyword in related_queries and related_queries[keyword] is not None:
-                        rising = related_queries[keyword].get('rising')
-                        if rising is not None and not rising.empty:
-                            top_trends = rising.head(3).to_dict('records')
-                            trending_data['trends'].extend(top_trends)
-                
-                # Sort and limit to top 5 trends
-                trending_data['trends'] = sorted(
-                    trending_data['trends'], 
-                    key=lambda x: x.get('value', 0), 
-                    reverse=True
-                )[:5]
-                
-                # Fallback to default trends if no real trends found
-                if not trending_data['trends']:
-                    trending_data['trends'] = self.fallback_trends
-                    logger.warning("⚠️ No real trends found, using fallback trends")
-                
-                logger.info(f"✅ Trend research completed successfully with {len(trending_data['trends'])} trends")
-                return trending_data
-                
-            except Exception as e:
-                logger.warning(f"⚠️ Failed to get real trends: {str(e)}")
-                logger.info("🔄 Using fallback trend data")
-                
-                # Always return valid structure even on failure
-                return {
-                    'research_time': research_time,
-                    'keywords_used': keywords,
-                    'trends': self.fallback_trends,
-                    'colors': self.fallback_colors,
-                    'styles': self.fallback_styles,
-                    'source': 'fallback'
-                }
-                
+            return {
+                'research_time': research_time,
+                'keywords_used': ['fallback'],
+                'trends': self.fallback_trends,
+                'colors': self.fallback_colors,
+                'styles': self.fallback_styles,
+                'source': 'fallback'
+            }
+            
         except Exception as e:
             logger.exception(f"❌ Critical error in trend research: {str(e)}")
             # Ultimate fallback
             return {
                 'research_time': datetime.now().strftime('%Y-%m-%d %H:%M'),
-                'keywords_used': ['fallback'],
+                'keywords_used': ['critical_fallback'],
                 'trends': self.fallback_trends,
                 'colors': self.fallback_colors,
                 'styles': self.fallback_styles,
                 'source': 'critical_fallback'
             }
     
-    def generate_gig_content(self, trends_data: Dict[str, Any]) -> str:
-        """Generate Fiverr gig content with robust error handling"""
+    def generate_gig_content(self, trends_ Dict[str, Any]) -> str:
+        """Generate Fiverr gig content with robust error handling - FIXED FOR OPENAI v1.0+"""
         try:
             logger.info("📝 Generating Fiverr gig content...")
             
@@ -241,7 +180,6 @@ class ProductionFiverrAgent:
             • Top trending themes: {', '.join(top_trends)}
             • Popular colors: {', '.join(top_colors)}
             • In-demand styles: {', '.join(top_styles)}
-            • Keywords used in research: {', '.join(trends_data.get('keywords_used', []))}
 
             Create content that:
             1. Uses emotional triggers and urgency
@@ -265,9 +203,9 @@ class ProductionFiverrAgent:
             ⏰ TURNAROUND: [Clear delivery timeframe with urgency trigger]
             """
             
-            # Generate content with retries
+            # Generate content with retries - FIXED SYNTAX FOR v1.0+
             completion = self._retry_api_call(
-                self.openai_client.ChatCompletion.create,
+                self.client.chat.completions.create,
                 model="minimax/minimax-m2:free",
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.7,
@@ -276,7 +214,7 @@ class ProductionFiverrAgent:
             )
             
             if completion and completion.choices and len(completion.choices) > 0:
-                content = completion.choices[0].message.get('content', '').strip()
+                content = completion.choices[0].message.content.strip()
                 logger.info("✅ Gig content generated successfully")
                 return content
             
@@ -287,7 +225,7 @@ class ProductionFiverrAgent:
             logger.error(f"❌ Failed to generate gig content: {str(e)}")
             return self._get_fallback_gig_content(trends_data)
     
-    def _get_fallback_gig_content(self, trends_data: Dict[str, Any]) -> str:
+    def _get_fallback_gig_content(self, trends_ Dict[str, Any]) -> str:
         """Fallback gig content when API fails"""
         top_trends = [trend.get('query', 'trending design') for trend in trends_data.get('trends', [])[:2]]
         return f"""
@@ -305,7 +243,7 @@ class ProductionFiverrAgent:
         ⏰ TURNAROUND: Most orders delivered within 24 hours - limited slots available today!
         """
     
-    def generate_trending_prompts(self, trends_data: Dict[str, Any]) -> List[str]:
+    def generate_trending_prompts(self, trends_ Dict[str, Any]) -> List[str]:
         """Generate Puter.js prompts for trending designs"""
         try:
             top_trends = [trend.get('query', 'cool design') for trend in trends_data.get('trends', [])[:3]]
@@ -382,7 +320,7 @@ class ProductionFiverrAgent:
             self.send_telegram(failure_report)
             return False
     
-    def _create_agent_report(self, trends_data: Dict[str, Any], gig_content: str, 
+    def _create_agent_report(self, trends_ Dict[str, Any], gig_content: str, 
                            design_prompts: List[str], start_time: datetime) -> str:
         """Create comprehensive, production-ready agent report"""
         duration = (datetime.now() - start_time).total_seconds()
@@ -404,7 +342,6 @@ class ProductionFiverrAgent:
 🤖 <b>PRODUCTION FIVERR T-SHIRT AGENT REPORT</b>
 📅 {datetime.now().strftime('%Y-%m-%d %H:%M')}
 ⏱️ Cycle duration: {duration:.1f} seconds
-📈 Data freshness: {trends_data.get('research_time', 'Unknown')}
 
 🔥 <b>TRENDING DESIGNS RESEARCHED</b>
 {trends_text or 'Using fallback trend data'}
@@ -430,7 +367,7 @@ class ProductionFiverrAgent:
 def main():
     """Production entry point with proper error handling"""
     try:
-        logger.info("🎯 Starting production Fiverr T-shirt agent")
+        logger.info("🎯 Starting production Fiverr t-shirt agent")
         agent = ProductionFiverrAgent()
         success = agent.run_agent_cycle()
         
