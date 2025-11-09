@@ -17,9 +17,9 @@ jobs:
         with:
           python-version: '3.11'
           
-      - name: Install dependencies
+            - name: Install dependencies
         run: |
-          pip install requests python-telegram-bot pytrends pillow openrouter-python
+          pip install -r requirements.txt
           
       - name: Run Agent Core
         env:
