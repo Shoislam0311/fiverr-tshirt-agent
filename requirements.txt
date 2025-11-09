@@ -1,0 +1,5 @@
+requests==2.31.0
+python-telegram-bot==20.6
+pytrends==4.9.2
+pillow==10.2.0
+openrouter-python==0.1.0
