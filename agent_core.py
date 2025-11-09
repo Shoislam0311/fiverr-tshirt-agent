@@ -12,10 +12,10 @@ class FiverrTShirtAgent:
         self.chat_id = os.getenv('TELEGRAM_CHAT_ID')
         self.openrouter_key = os.getenv('OPENROUTER_API_KEY')
         
-        # Configure OpenAI client for OpenRouter API
-        openai.api_base = "https://openrouter.ai/api/v1"
-        openai.api_key = self.openrouter_key
-        openai.organization = "org_00000000000000000000000000"
+       # Configure for OpenRouter
+       openai.api_base = "https://openrouter.ai/api/v1"
+       openai.api_key = os.getenv('OPENROUTER_API_KEY')
+       openai.organization = ""  # OpenRouter requires this field
         
         self.trends = TrendReq(hl='en-US', tz=360)
         
