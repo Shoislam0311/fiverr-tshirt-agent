@@ -162,7 +162,7 @@ class ProductionFiverrAgent:
                 'source': 'critical_fallback'
             }
     
-    def generate_gig_content(self, trends_ Dict[str, Any]) -> str:
+     def generate_gig_content(self, trends_ Dict[str, Any]) -> str:
         """Generate Fiverr gig content with robust error handling - FIXED FOR OPENAI v1.0+"""
         try:
             logger.info("📝 Generating Fiverr gig content...")
