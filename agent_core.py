@@ -6,6 +6,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
 import random
+import httpx
 
 # Configure logging for production
 logging.basicConfig(
@@ -29,12 +30,21 @@ class ProductionFiverrAgent:
             logger.error("❌ CRITICAL: Missing required environment variables")
             raise ValueError("Missing required environment variables")
         
-        # Configure OpenAI client for OpenRouter API - FIXED FOR v1.0+
+        # Configure OpenAI client for OpenRouter API - PROPERLY FIXED
         try:
             from openai import OpenAI
+            
+            # Create a clean httpx client without proxy conflicts
+            http_client = httpx.Client(
+                timeout=30.0,
+                follow_redirects=True
+            )
+            
+            # Initialize OpenAI client with proper configuration
             self.client = OpenAI(
                 base_url="https://openrouter.ai/api/v1",
-                api_key=self.openrouter_key
+                api_key=self.openrouter_key,
+                http_client=http_client
             )
             logger.info("✅ OpenRouter API configured successfully")
         except Exception as e:
@@ -162,137 +172,182 @@ class ProductionFiverrAgent:
                 'source': 'critical_fallback'
             }
     
-def generate_gig_content(self, trends: Dict[str, Any]) -> str:
-    """Generate Fiverr gig content with robust error handling - FIXED FOR OPENAI v1.0+"""
-    try:
-        logger.info("📝 Generating Fiverr gig content...")
+    def generate_gig_content(self, trends_ Dict[str, Any]) -> str:
+        """Generate Fiverr gig content with robust error handling - FIXED FOR OPENAI v1.0+"""
+        try:
+            logger.info("📝 Generating Fiverr gig content...")
+            
+            # Extract top trends for the prompt
+            top_trends = [trend.get('query', 'trending design') for trend in trends_data.get('trends', [])[:3]]
+            top_colors = trends_data.get('colors', self.fallback_colors)[:3]
+            top_styles = trends_data.get('styles', self.fallback_styles)[:2]
+            
+            # Create detailed prompt
+            prompt = f"""
+            Act as a professional Fiverr gig expert with 10+ years of experience. Create compelling, SEO-optimized content for a t-shirt design gig that will convert browsers into buyers.
 
-        # Extract top trends for the prompt
-        top_trends = [trend.get('query', 'trending design') for trend in trends.get('trends', [])[:3]]
-        top_colors = trends.get('colors', self.fallback_colors)[:3]
-        top_styles = trends.get('styles', self.fallback_styles)[:2]
+            Current market insights (researched {trends_data.get('research_time', 'today')}):
+            • Top trending themes: {', '.join(top_trends)}
+            • Popular colors: {', '.join(top_colors)}
+            • In-demand styles: {', '.join(top_styles)}
 
-        # Create detailed prompt
-        prompt = f"""
-Act as a professional Fiverr gig expert with 10+ years of experience. Create compelling, SEO-optimized content for a t-shirt design gig that will convert browsers into buyers.
+            Create content that:
+            1. Uses emotional triggers and urgency
+            2. Includes specific, measurable benefits
+            3. Targets both commercial buyers and personal use customers
+            4. Incorporates current trend data naturally
+            5. Optimized for Fiverr's search algorithm
 
-Current market insights (researched {trends.get('research_time', 'today')}):
-• Top trending themes: {', '.join(top_trends)}
-• Popular colors: {', '.join(top_colors)}
-• In-demand styles: {', '.join(top_styles)}
-
-Create content that:
-1. Uses emotional triggers and urgency
-2. Includes specific, measurable benefits
-3. Targets both commercial buyers and personal use customers
-4. Incorporates current trend data naturally
-5. Optimized for Fiverr's search algorithm
-
-Output format (EXACTLY as shown):
-🎯 GIG TITLE: [Catchy, keyword-rich title under 60 characters]
-📝 SHORT DESCRIPTION: [One compelling sentence that creates desire]
-💡 KEY BENEFITS:
-• Benefit 1: [Specific, measurable benefit]
-• Benefit 2: [Specific, measurable benefit] 
-• Benefit 3: [Specific, measurable benefit]
-📦 PACKAGE OPTIONS:
-• BASIC ($15): 1 design concept, 2 revisions, PNG files, 48hr delivery
-• STANDARD ($30): 3 design concepts, unlimited revisions, PNG + source files, 24hr delivery
-• PREMIUM ($50): 5 design concepts + mockups, unlimited revisions, all file formats, 12hr delivery
-🔍 SEO KEYWORDS: [5 comma-separated keywords optimized for Fiverr search]
-⏰ TURNAROUND: [Clear delivery timeframe with urgency trigger]
-""".strip()
-
-        # Generate content with retries - FIXED SYNTAX FOR v1.0+
-        completion = self._retry_api_call(
-            self.client.chat.completions.create,
-            model="minimax/minimax-m2:free",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.7,
-            max_tokens=400,
-            timeout=self.api_timeout
-        )
-
-        if completion and getattr(completion, "choices", None) and len(completion.choices) > 0:
-            content = completion.choices[0].message.content.strip()
-            logger.info("✅ Gig content generated successfully")
-            return content
-
-        logger.warning("⚠️ Empty response from OpenRouter API")
-        return self._get_fallback_gig_content(trends)
-
-    except Exception as e:
-        logger.error(f"❌ Failed to generate gig content: {str(e)}")
-        return self._get_fallback_gig_content(trends)
-
-
-def _get_fallback_gig_content(self, trends: Dict[str, Any]) -> str:
-    """Fallback gig content when API fails"""
-    top_trends = [trend.get('query', 'trending design') for trend in trends.get('trends', [])[:2]]
-    return f"""
-🎯 GIG TITLE: Trending {', '.join(top_trends[:1])} T-Shirt Designs
-📝 SHORT DESCRIPTION: I create viral-worthy, high-converting t-shirt graphics that sell
-💡 KEY BENEFITS:
-• Benefit 1: 100% custom designs based on current market trends
-• Benefit 2: Fast delivery with unlimited revisions until perfect
-• Benefit 3: Commercial use rights included for all designs
-📦 PACKAGE OPTIONS:
-• BASIC ($15): 1 design concept, 2 revisions, PNG files, 48hr delivery
-• STANDARD ($30): 3 design concepts, unlimited revisions, PNG + source files, 24hr delivery  
-• PREMIUM ($50): 5 design concepts + mockups, unlimited revisions, all file formats, 12hr delivery
-🔍 SEO KEYWORDS: tshirt design, custom graphic tee, trendy apparel, viral tshirt, brand merchandise
-⏰ TURNAROUND: Most orders delivered within 24 hours - limited slots available today!
-""".strip()
-
-
-def generate_trending_prompts(self, trends: Dict[str, Any]) -> List[str]:
-    """Generate Puter.js prompts for trending designs"""
-    try:
-        top_trends = [trend.get('query', 'cool design') for trend in trends.get('trends', [])[:3]]
-        top_colors = trends.get('colors', self.fallback_colors)[:2]
-
-        prompts = []
-        for trend in top_trends:
-            # Create multiple prompt variations for each trend
-            prompts.extend([
-                f"Minimalist {trend} t-shirt design, {top_colors[0]} and {top_colors[1]} color scheme, clean vector art, isolated on white background, commercial use ready",
-                f"Modern {trend} aesthetic t-shirt graphic, {', '.join(top_colors)} colors, professional typography, high detail line art, white background",
-                f"Creative {trend} inspired t-shirt design, abstract interpretation, {top_colors[0]} accents on white, minimalist style, printing ready"
-            ])
-
-        return prompts[:6]  # Return top 6 prompts
-
-    except Exception as e:
-        logger.error(f"❌ Error generating prompts: {str(e)}")
-        return [
-            "Minimalist retro gaming pixel art cat t-shirt design on white background",
-            "Cottagecore mushroom forest aesthetic t-shirt, earth tones, clean lines",
-            "Cyberpunk geometric neon grid pattern shirt, dark background with bright accents",
-            "Motivational quote 'Hustle Hard' in modern typography with abstract background",
-            "Abstract coffee bean pattern forming mountain peaks for coffee shop t-shirt",
-            "Minimalist lion head silhouette with 'Iron Temple' text for gym apparel"
-        ]
-
-
-def _create_agent_report(self, trends: Dict[str, Any], gig_content: str,
-                         design_prompts: List[str], start_time: datetime) -> str:
-    """Create comprehensive, production-ready agent report"""
-    duration = (datetime.now() - start_time).total_seconds()
-
-    # Format trends for report
-    trends_text = "\n".join([
-        f"• {trend.get('query', 'Unknown trend')} ({trend.get('value', 0)}%)"
-        for trend in trends.get('trends', [])[:5]
-    ])
-
-    # Format design prompts
-    prompts_text = "\n".join([
-        f"{i+1}. {prompt}"
-        for i, prompt in enumerate(design_prompts[:3])
-    ])
-
-    # Create professional report
-    report = f"""
+            Output format (EXACTLY as shown):
+            🎯 GIG TITLE: [Catchy, keyword-rich title under 60 characters]
+            📝 SHORT DESCRIPTION: [One compelling sentence that creates desire]
+            💡 KEY BENEFITS:
+            • Benefit 1: [Specific, measurable benefit]
+            • Benefit 2: [Specific, measurable benefit] 
+            • Benefit 3: [Specific, measurable benefit]
+            📦 PACKAGE OPTIONS:
+            • BASIC ($15): 1 design concept, 2 revisions, PNG files, 48hr delivery
+            • STANDARD ($30): 3 design concepts, unlimited revisions, PNG + source files, 24hr delivery
+            • PREMIUM ($50): 5 design concepts + mockups, unlimited revisions, all file formats, 12hr delivery
+            🔍 SEO KEYWORDS: [5 comma-separated keywords optimized for Fiverr search]
+            ⏰ TURNAROUND: [Clear delivery timeframe with urgency trigger]
+            """
+            
+            # Generate content with retries - FIXED SYNTAX FOR v1.0+
+            completion = self._retry_api_call(
+                self.client.chat.completions.create,
+                model="minimax/minimax-m2:free",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.7,
+                max_tokens=400
+            )
+            
+            if completion and completion.choices and len(completion.choices) > 0:
+                content = completion.choices[0].message.content.strip()
+                logger.info("✅ Gig content generated successfully")
+                return content
+            
+            logger.warning("⚠️ Empty response from OpenRouter API")
+            return self._get_fallback_gig_content(trends_data)
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to generate gig content: {str(e)}")
+            return self._get_fallback_gig_content(trends_data)
+    
+    def _get_fallback_gig_content(self, trends_ Dict[str, Any]) -> str:
+        """Fallback gig content when API fails"""
+        top_trends = [trend.get('query', 'trending design') for trend in trends_data.get('trends', [])[:2]]
+        return f"""
+        🎯 GIG TITLE: Trending {', '.join(top_trends[:1])} T-Shirt Designs
+        📝 SHORT DESCRIPTION: I create viral-worthy, high-converting t-shirt graphics that sell
+        💡 KEY BENEFITS:
+        • Benefit 1: 100% custom designs based on current market trends
+        • Benefit 2: Fast delivery with unlimited revisions until perfect
+        • Benefit 3: Commercial use rights included for all designs
+        📦 PACKAGE OPTIONS:
+        • BASIC ($15): 1 design concept, 2 revisions, PNG files, 48hr delivery
+        • STANDARD ($30): 3 design concepts, unlimited revisions, PNG + source files, 24hr delivery  
+        • PREMIUM ($50): 5 design concepts + mockups, unlimited revisions, all file formats, 12hr delivery
+        🔍 SEO KEYWORDS: tshirt design, custom graphic tee, trendy apparel, viral tshirt, brand merchandise
+        ⏰ TURNAROUND: Most orders delivered within 24 hours - limited slots available today!
+        """
+    
+    def generate_trending_prompts(self, trends_ Dict[str, Any]) -> List[str]:
+        """Generate Puter.js prompts for trending designs"""
+        try:
+            top_trends = [trend.get('query', 'cool design') for trend in trends_data.get('trends', [])[:3]]
+            top_colors = trends_data.get('colors', self.fallback_colors)[:2]
+            
+            prompts = []
+            for trend in top_trends:
+                # Create multiple prompt variations for each trend
+                prompts.extend([
+                    f"Minimalist {trend} t-shirt design, {top_colors[0]} and {top_colors[1]} color scheme, clean vector art, isolated on white background, commercial use ready",
+                    f"Modern {trend} aesthetic t-shirt graphic, {', '.join(top_colors)} colors, professional typography, high detail line art, white background",
+                    f"Creative {trend} inspired t-shirt design, abstract interpretation, {top_colors[0]} accents on white, minimalist style, printing ready"
+                ])
+            
+            return prompts[:6]  # Return top 6 prompts
+            
+        except Exception as e:
+            logger.error(f"❌ Error generating prompts: {str(e)}")
+            return [
+                "Minimalist retro gaming pixel art cat t-shirt design on white background",
+                "Cottagecore mushroom forest aesthetic t-shirt, earth tones, clean lines", 
+                "Cyberpunk geometric neon grid pattern shirt, dark background with bright accents",
+                "Motivational quote 'Hustle Hard' in modern typography with abstract background",
+                "Abstract coffee bean pattern forming mountain peaks for coffee shop t-shirt",
+                "Minimalist lion head silhouette with 'Iron Temple' text for gym apparel"
+            ]
+    
+    def run_agent_cycle(self) -> bool:
+        """Main production agent cycle with comprehensive monitoring"""
+        start_time = datetime.now()
+        logger.info("🚀 Starting 24/7 Fiverr T-Shirt Agent cycle")
+        
+        try:
+            # Phase 1: Research trends
+            logger.info("📊 Phase 1: Researching current trends...")
+            trends_data = self.research_trends()
+            logger.info(f"🔥 Top trends identified: {[t.get('query') for t in trends_data.get('trends', [])[:3]]}")
+            
+            # Phase 2: Generate gig content
+            logger.info("📝 Phase 2: Generating Fiverr gig content...")
+            gig_content = self.generate_gig_content(trends_data)
+            
+            # Phase 3: Generate design prompts
+            logger.info("🎨 Phase 3: Generating trending design prompts...")
+            design_prompts = self.generate_trending_prompts(trends_data)
+            
+            # Phase 4: Create comprehensive report
+            logger.info("📋 Phase 4: Creating agent report...")
+            report = self._create_agent_report(trends_data, gig_content, design_prompts, start_time)
+            
+            # Phase 5: Send Telegram notification
+            logger.info("📲 Phase 5: Sending Telegram notification...")
+            success = self.send_telegram(report)
+            
+            # Phase 6: Log completion metrics
+            duration = (datetime.now() - start_time).total_seconds()
+            logger.info(f"✅ Agent cycle completed successfully in {duration:.1f} seconds")
+            logger.info(f"📱 Telegram notification status: {'Sent' if success else 'Failed'}")
+            
+            return success
+            
+        except Exception as e:
+            duration = (datetime.now() - start_time).total_seconds()
+            logger.exception(f"❌ Agent cycle failed after {duration:.1f} seconds: {str(e)}")
+            
+            # Send failure notification
+            failure_report = f"""
+            🚨 <b>AGENT FAILURE ALERT</b>
+            ⏰ {datetime.now().strftime('%Y-%m-%d %H:%M')}
+            ❌ Cycle failed after {duration:.1f} seconds
+            📝 Error: {str(e)[:200]}...
+            🔄 Next run in 6 hours
+            """
+            self.send_telegram(failure_report)
+            return False
+    
+    def _create_agent_report(self, trends_ Dict[str, Any], gig_content: str, 
+                           design_prompts: List[str], start_time: datetime) -> str:
+        """Create comprehensive, production-ready agent report"""
+        duration = (datetime.now() - start_time).total_seconds()
+        
+        # Format trends for report
+        trends_text = "\n".join([
+            f"• {trend.get('query', 'Unknown trend')} ({trend.get('value', 0)}%)"
+            for trend in trends_data.get('trends', [])[:5]
+        ])
+        
+        # Format design prompts
+        prompts_text = "\n".join([
+            f"{i+1}. {prompt}" 
+            for i, prompt in enumerate(design_prompts[:3])
+        ])
+        
+        # Create professional report
+        report = f"""
 🤖 <b>PRODUCTION FIVERR T-SHIRT AGENT REPORT</b>
 📅 {datetime.now().strftime('%Y-%m-%d %H:%M')}
 ⏱️ Cycle duration: {duration:.1f} seconds
@@ -315,9 +370,8 @@ def _create_agent_report(self, trends: Dict[str, Any], gig_content: str,
 
 🔄 <b>NEXT SCHEDULED RUN</b>: {datetime.now() + timedelta(hours=6):%Y-%m-%d %H:%M}
 💡 <b>SYSTEM STATUS</b>: ✅ All systems operational
-""".strip()
-
-    return report
+"""
+        return report
 
 def main():
     """Production entry point with proper error handling"""
