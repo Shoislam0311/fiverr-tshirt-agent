@@ -13,14 +13,14 @@ jobs:
         uses: actions/checkout@v4
         
       - name: Setup Python
-  uses: actions/setup-python@v4
-  with:
-+   python-version: '3.11'
-          
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'  # This line was missing - fixes the error
+        
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
-          
+          pip install requests python-telegram-bot pytrends pillow openai
+      
       - name: Run Agent Core
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
