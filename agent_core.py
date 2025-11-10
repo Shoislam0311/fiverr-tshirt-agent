@@ -13,15 +13,15 @@ from bs4 import BeautifulSoup
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger('autonomous_agent')
+logger = logging.getLogger('true_autonomous_agent')
 
-class AutonomousTShirtAgent:
+class TrueAutonomousTShirtAgent:
     def __init__(self):
         """Initialize the agent with proper API configuration"""
         self._validate_environment_vars()
         self._configure_openrouter_client()
         self._initialize_search_engines()
-        logger.info("✅ Agent initialized with full autonomous capabilities")
+        logger.info("✅ True autonomous agent initialized - no hardcoded examples or themes")
 
     def _validate_environment_vars(self):
         """Validate all required environment variables"""
@@ -88,29 +88,39 @@ class AutonomousTShirtAgent:
         logger.info("🔍 Starting comprehensive market research...")
         start_time = time.time()
         
+        # Initialize research results with empty data
         research_results = {
-            'platforms': {
-                'tiktok': self._research_tiktok_trends(),
-                'instagram': self._research_instagram_trends(),
-                'reddit': self._research_reddit_trends(),
-                'pinterest': self._research_pinterest_trends(),
-                'fiverr': self._research_fiverr_trends()
-            },
+            'platforms': {},
             'research_time': datetime.now().strftime('%Y-%m-%d %H:%M'),
             'data_points': 0
         }
         
-        # Count total data points collected
-        for platform, data in research_results['platforms'].items():
-            if isinstance(data, list):
-                research_results['data_points'] += len(data)
+        # Research each platform
+        platforms = ['tiktok', 'instagram', 'reddit', 'pinterest', 'fiverr']
+        
+        for platform in platforms:
+            logger.info(f"📊 Researching {platform.upper()} trends...")
+            try:
+                # Dynamically call the research method for each platform
+                research_method = getattr(self, f'_research_{platform}_trends')
+                platform_data = research_method()
+                
+                research_results['platforms'][platform] = platform_data
+                research_results['data_points'] += len(platform_data) if isinstance(platform_data, list) else 0
+                
+            except AttributeError:
+                logger.error(f"❌ Research method for {platform} not found")
+            except Exception as e:
+                logger.warning(f"⚠️ {platform} research failed: {str(e)}")
+                # Add empty data for failed platform
+                research_results['platforms'][platform] = []
         
         duration = time.time() - start_time
         logger.info(f"✅ Research completed in {duration:.1f} seconds with {research_results['data_points']} data points")
         return research_results
 
     def _research_tiktok_trends(self) -> List[Dict[str, str]]:
-        """Research trending t-shirt designs on TikTok"""
+        """Research trending t-shirt designs on TikTok using live data"""
         logger.info("📱 Researching TikTok trends...")
         trends = []
         
@@ -120,36 +130,32 @@ class AutonomousTShirtAgent:
             results = self._bing_search(query, max_results=5)
             
             for result in results:
-                if 't-shirt' in result['title'].lower() or 'tee' in result['title'].lower():
+                # Extract actual trend data from search results
+                title = result['title']
+                snippet = result['snippet']
+                
+                # Only add results that contain actual t-shirt design information
+                if any(keyword in title.lower() or keyword in snippet.lower() 
+                       for keyword in ['t-shirt', 'tee', 'shirt', 'design', 'graphic', 'print']):
                     trends.append({
-                        'title': result['title'],
-                        'snippet': result['snippet'],
-                        'platform': 'tiktok'
+                        'title': title,
+                        'snippet': snippet,
+                        'platform': 'tiktok',
+                        'source_url': result.get('url', 'https://bing.com')
                     })
             
             if trends:
-                logger.info(f"✅ Found {len(trends)} TikTok trends")
+                logger.info(f"✅ Found {len(trends)} TikTok trends from live data")
                 return trends
             
         except Exception as e:
             logger.warning(f"⚠️ TikTok research failed: {str(e)}")
         
-        # Fallback trending TikTok themes
-        return [
-            {
-                'title': 'Retro Gaming Pixel Art T-Shirts',
-                'snippet': 'Pixel art t-shirts with 8-bit characters trending on TikTok',
-                'platform': 'tiktok'
-            },
-            {
-                'title': 'Motivational Quote Minimalist T-Shirts',
-                'snippet': 'Simple typography t-shirts with short motivational quotes going viral',
-                'platform': 'tiktok'
-            }
-        ]
+        # Return empty list if research fails - no hardcoded fallbacks
+        return []
 
     def _research_instagram_trends(self) -> List[Dict[str, str]]:
-        """Research trending t-shirt designs on Instagram"""
+        """Research trending t-shirt designs on Instagram using live data"""
         logger.info("📸 Researching Instagram trends...")
         trends = []
         
@@ -158,36 +164,30 @@ class AutonomousTShirtAgent:
             results = self._bing_search(query, max_results=5)
             
             for result in results:
-                if 'shirt' in result['snippet'].lower() or 'tee' in result['snippet'].lower():
+                title = result['title']
+                snippet = result['snippet']
+                
+                if any(keyword in title.lower() or keyword in snippet.lower() 
+                       for keyword in ['t-shirt', 'tee', 'shirt', 'design', 'aesthetic', 'trend']):
                     trends.append({
-                        'title': result['title'],
-                        'snippet': result['snippet'],
-                        'platform': 'instagram'
+                        'title': title,
+                        'snippet': snippet,
+                        'platform': 'instagram',
+                        'source_url': result.get('url', 'https://bing.com')
                     })
             
             if trends:
-                logger.info(f"✅ Found {len(trends)} Instagram trends")
+                logger.info(f"✅ Found {len(trends)} Instagram trends from live data")
                 return trends
             
         except Exception as e:
             logger.warning(f"⚠️ Instagram research failed: {str(e)}")
         
-        # Fallback Instagram trends
-        return [
-            {
-                'title': 'Cottagecore Mushroom Aesthetic T-Shirts',
-                'snippet': 'Nature-inspired mushroom forest designs popular on Instagram',
-                'platform': 'instagram'
-            },
-            {
-                'title': 'Cyberpunk Geometric Pattern T-Shirts',
-                'snippet': 'Neon geometric patterns with dark backgrounds trending on Instagram',
-                'platform': 'instagram'
-            }
-        ]
+        # Return empty list if research fails - no hardcoded fallbacks
+        return []
 
     def _research_reddit_trends(self) -> List[Dict[str, str]]:
-        """Research trending t-shirt designs on Reddit"""
+        """Research trending t-shirt designs on Reddit using live data"""
         logger.info("🤖 Researching Reddit trends...")
         trends = []
         
@@ -196,31 +196,30 @@ class AutonomousTShirtAgent:
             results = self._bing_search(query, max_results=5)
             
             for result in results:
-                if 'design' in result['title'].lower() and ('tshirt' in result['title'].lower() or 'shirt' in result['title'].lower()):
+                title = result['title']
+                snippet = result['snippet']
+                
+                if any(keyword in title.lower() or keyword in snippet.lower() 
+                       for keyword in ['design', 'tshirt', 'shirt', 'tee', 'thread', 'post']):
                     trends.append({
-                        'title': result['title'],
-                        'snippet': result['snippet'],
-                        'platform': 'reddit'
+                        'title': title,
+                        'snippet': snippet,
+                        'platform': 'reddit',
+                        'source_url': result.get('url', 'https://bing.com')
                     })
             
             if trends:
-                logger.info(f"✅ Found {len(trends)} Reddit trends")
+                logger.info(f"✅ Found {len(trends)} Reddit trends from live data")
                 return trends
             
         except Exception as e:
             logger.warning(f"⚠️ Reddit research failed: {str(e)}")
         
-        # Fallback Reddit trends
-        return [
-            {
-                'title': 'Abstract Geometric T-Shirts',
-                'snippet': 'Minimalist geometric patterns with bold color combinations popular on Reddit',
-                'platform': 'reddit'
-            }
-        ]
+        # Return empty list if research fails - no hardcoded fallbacks
+        return []
 
     def _research_pinterest_trends(self) -> List[Dict[str, str]]:
-        """Research trending t-shirt designs on Pinterest"""
+        """Research trending t-shirt designs on Pinterest using live data"""
         logger.info("📌 Researching Pinterest trends...")
         trends = []
         
@@ -229,31 +228,30 @@ class AutonomousTShirtAgent:
             results = self._bing_search(query, max_results=5)
             
             for result in results:
-                if 'design' in result['title'].lower() and ('tshirt' in result['title'].lower() or 'shirt' in result['title'].lower()):
+                title = result['title']
+                snippet = result['snippet']
+                
+                if any(keyword in title.lower() or keyword in snippet.lower() 
+                       for keyword in ['design', 'tshirt', 'shirt', 'aesthetic', 'trend', 'pin']):
                     trends.append({
-                        'title': result['title'],
-                        'snippet': result['snippet'],
-                        'platform': 'pinterest'
+                        'title': title,
+                        'snippet': snippet,
+                        'platform': 'pinterest',
+                        'source_url': result.get('url', 'https://bing.com')
                     })
             
             if trends:
-                logger.info(f"✅ Found {len(trends)} Pinterest trends")
+                logger.info(f"✅ Found {len(trends)} Pinterest trends from live data")
                 return trends
             
         except Exception as e:
             logger.warning(f"⚠️ Pinterest research failed: {str(e)}")
         
-        # Fallback Pinterest trends
-        return [
-            {
-                'title': 'Minimalist Line Art T-Shirts',
-                'snippet': 'Simple line art designs with clean aesthetics trending on Pinterest',
-                'platform': 'pinterest'
-            }
-        ]
+        # Return empty list if research fails - no hardcoded fallbacks
+        return []
 
     def _research_fiverr_trends(self) -> List[Dict[str, str]]:
-        """Research trending t-shirt designs on Fiverr"""
+        """Research trending t-shirt designs on Fiverr using live data"""
         logger.info("💼 Researching Fiverr marketplace trends...")
         trends = []
         
@@ -262,28 +260,27 @@ class AutonomousTShirtAgent:
             results = self._bing_search(query, max_results=5)
             
             for result in results:
-                if 'fiverr' in result['title'].lower() and ('tshirt' in result['title'].lower() or 'shirt' in result['title'].lower()):
+                title = result['title']
+                snippet = result['snippet']
+                
+                if any(keyword in title.lower() or keyword in snippet.lower() 
+                       for keyword in ['fiverr', 'tshirt', 'shirt', 'design', 'gig', 'best selling']):
                     trends.append({
-                        'title': result['title'],
-                        'snippet': result['snippet'],
-                        'platform': 'fiverr'
+                        'title': title,
+                        'snippet': snippet,
+                        'platform': 'fiverr',
+                        'source_url': result.get('url', 'https://bing.com')
                     })
             
             if trends:
-                logger.info(f"✅ Found {len(trends)} Fiverr trends")
+                logger.info(f"✅ Found {len(trends)} Fiverr trends from live data")
                 return trends
             
         except Exception as e:
             logger.warning(f"⚠️ Fiverr research failed: {str(e)}")
         
-        # Fallback Fiverr trends
-        return [
-            {
-                'title': 'Gym Brand Motivational T-Shirts',
-                'snippet': 'Fitness-themed motivational t-shirts with bold typography best sellers on Fiverr',
-                'platform': 'fiverr'
-            }
-        ]
+        # Return empty list if research fails - no hardcoded fallbacks
+        return []
 
     def _bing_search(self, query: str, max_results: int = 5) -> List[Dict[str, str]]:
         """Perform Bing search and extract relevant results"""
@@ -328,47 +325,61 @@ class AutonomousTShirtAgent:
             logger.warning(f"⚠️ Bing search failed for query '{query}': {str(e)}")
             return []
 
-    def generate_prompts_from_research(self, research_data: Dict[str, Any]) -> List[str]:
-        """Generate unique prompts based on actual research data"""
-        logger.info("🎨 Generating prompts from research data...")
+    def generate_prompts_from_research(self, research_ Dict[str, Any]) -> List[str]:
+        """Generate unique prompts based SOLELY on actual research data - no predefined themes"""
+        logger.info("🤖 Activating MiniMax M2 agentic workflow for prompt generation...")
         
         try:
-            # Extract raw trend data from research
-            trend_data = []
+            # Extract ALL raw trend data from research - no filtering or selection
+            all_research_data = []
             for platform, trends in research_data['platforms'].items():
                 if isinstance(trends, list):
                     for trend in trends:
-                        trend_data.append(f"{platform.upper()}: {trend.get('title', '')} - {trend.get('snippet', '')}")
+                        # Extract title and snippet from each trend
+                        title = trend.get('title', '')
+                        snippet = trend.get('snippet', '')
+                        
+                        # Combine title and snippet for comprehensive research data
+                        if title and snippet:
+                            all_research_data.append(f"PLATFORM: {platform.upper()}\nTITLE: {title}\nSNIPPET: {snippet}")
+                        elif title:
+                            all_research_data.append(f"PLATFORM: {platform.upper()}\nTITLE: {title}")
+                        elif snippet:
+                            all_research_data.append(f"PLATFORM: {platform.upper()}\nSNIPPET: {snippet}")
             
-            # Create research summary for AI
-            research_summary = "\n".join(trend_data[:10])  # Limit to top 10 trends
+            # Create comprehensive research summary for AI
+            research_summary = "\n\n".join(all_research_data)
             
-            # Create dynamic prompt for MiniMax M2
+            if not research_summary.strip():
+                logger.warning("⚠️ No research data found - cannot generate prompts")
+                return []  # Return empty list if no research data
+            
+            # Create agentic prompt for MiniMax M2 - NO HARDCODED THEMES OR EXAMPLES
             system_prompt = f"""
-            You are a professional prompt engineer specializing in converting market research into perfect image generation prompts for t-shirt designs. Your task is to analyze current trend data and create 5 ready-to-use prompts.
+            You are an autonomous AI agent with full agentic capabilities. Your task is to analyze the current market research data below and generate 5 unique, ready-to-use image generation prompts for t-shirt designs.
 
             CURRENT MARKET RESEARCH ({research_data['research_time']}):
             {research_summary}
 
-            PROMPT ENGINEERING INSTRUCTIONS:
-            1. Analyze the trend data above to identify actual current trends
-            2. Create 5 COMPLETELY UNIQUE prompts based on REAL trends from the research
+            AGENT INSTRUCTIONS:
+            1. Analyze the research data above to identify ACTUAL current trends from the market
+            2. Create 5 COMPLETELY UNIQUE prompts based SOLELY on the REAL trends from the research data
             3. Each prompt must be ready to copy-paste directly into image generators
             4. Include specific details: style, colors, composition, background, quality specifications
             5. Optimize for commercial t-shirt printing (clean lines, scalable, print-ready)
             6. Use professional design terminology and be extremely specific
-            7. DO NOT use examples from your training data - use ONLY the research data provided
-            8. Format: One prompt per line, numbered 1-5, with NO additional text or explanations
-            9. Make each prompt commercial-ready and printing-optimized
-            10. Include vector art specifications and isolated background requirements
-
-            EXAMPLE OF PERFECT PROMPT (DO NOT COPY THIS EXAMPLE - CREATE NEW ONES):
-            "Minimalist retro gaming pixel art cat t-shirt design, neon green and purple color scheme, clean vector art style, isolated on white background, commercial use ready, high detail line art"
+            7. DO NOT use ANY examples from your training data - use ONLY the research data provided
+            8. DO NOT create any prompts based on themes that exist in programming code
+            9. Format: One prompt per line, numbered 1-5, with NO additional text or explanations
+            10. Make each prompt commercial-ready and printing-optimized
+            11. Include vector art specifications and isolated background requirements
+            12. Generate prompts that reflect the actual trends found in the research data
+            13. DO NOT repeat any information from this instruction in your response
 
             NOW GENERATE 5 UNIQUE PROMPTS BASED SOLELY ON THE RESEARCH DATA ABOVE:
             """
             
-            # Generate prompts with MiniMax M2
+            # Generate prompts with MiniMax M2 using only research data
             completion = self.client.chat.completions.create(
                 model="minimax/minimax-m2:free",
                 messages=[{"role": "user", "content": system_prompt}],
@@ -381,19 +392,19 @@ class AutonomousTShirtAgent:
                 raw_content = completion.choices[0].message.content.strip()
                 logger.info("✅ MiniMax M2 generated prompts from research data")
                 
-                # Extract clean prompts
+                # Extract clean prompts from AI response
                 prompts = self._extract_clean_prompts(raw_content)
                 
-                if len(prompts) >= 3:  # At least 3 valid prompts
+                if len(prompts) >= 1:  # At least 1 valid prompt
                     return prompts[:5]
             
-            # Fallback if AI generation fails
-            logger.warning("⚠️ AI prompt generation failed - using research-based fallback")
-            return self._generate_fallback_prompts(research_data)
+            # Return empty list if AI generation fails - no hardcoded fallbacks
+            logger.warning("⚠️ AI prompt generation failed - no prompts generated")
+            return []
             
         except Exception as e:
             logger.error(f"❌ Prompt generation failed: {str(e)}")
-            return self._generate_fallback_prompts(research_data)
+            return []  # Return empty list if generation fails - no hardcoded fallbacks
 
     def _extract_clean_prompts(self, raw_content: str) -> List[str]:
         """Extract clean prompts from AI response"""
@@ -414,7 +425,7 @@ class AutonomousTShirtAgent:
                 prompt = match.group(2).strip()
                 if self._is_valid_prompt(prompt):
                     prompts.append(prompt)
-                    continue
+                continue
             
             # Check if line contains t-shirt design keywords and is sufficiently detailed
             if (len(line) > 50 and 
@@ -423,10 +434,7 @@ class AutonomousTShirtAgent:
                 if self._is_valid_prompt(line):
                     prompts.append(line)
         
-        # If we still don't have enough prompts, create some from research data
-        if len(prompts) < 3:
-            logger.info("ℹ️ Supplementing AI-generated prompts with research-based fallbacks")
-        
+        # Return only prompts extracted from research data - no generated fallbacks
         return prompts[:5]  # Return maximum 5 prompts
 
     def _is_valid_prompt(self, prompt: str) -> bool:
@@ -440,95 +448,7 @@ class AutonomousTShirtAgent:
         ]
         return all(required_elements)
 
-    def _generate_fallback_prompts(self, research_data: Dict[str, Any]) -> List[str]:
-        """Generate fallback prompts when AI fails, based on research data"""
-        logger.info("🔄 Generating fallback prompts from research data...")
-        
-        # Extract unique themes from research
-        themes = []
-        for platform, trends in research_data['platforms'].items():
-            if isinstance(trends, list):
-                for trend in trends[:2]:  # Take top 2 trends per platform
-                    title = trend.get('title', '').lower()
-                    if title:
-                        # Extract main theme words
-                        theme_words = [word for word in title.split() if len(word) > 3]
-                        if theme_words:
-                            themes.append(' '.join(theme_words[:3]))
-        
-        # Remove duplicates and limit
-        themes = list(dict.fromkeys(themes))[:5]
-        
-        # If no themes found, use default trending themes
-        if not themes:
-            themes = [
-                'retro gaming pixel art',
-                'cottagecore mushroom aesthetic',
-                'cyberpunk geometric neon',
-                'motivational typography modern',
-                'abstract fluid wave pattern'
-            ]
-        
-        # Generate prompts based on themes
-        prompts = []
-        for i, theme in enumerate(themes[:5]):
-            prompt = self._generate_prompt_from_theme(theme, i)
-            prompts.append(prompt)
-        
-        logger.info(f"✅ Generated {len(prompts)} fallback prompts from research data")
-        return prompts
-
-    def _generate_prompt_from_theme(self, theme: str, index: int) -> str:
-        """Generate a professional prompt from a single theme"""
-        theme = theme.lower()
-        
-        # Determine style and color scheme based on theme
-        if 'retro' in theme or 'gaming' in theme or 'pixel' in theme:
-            style = "minimalist pixel art style"
-            colors = "neon green and purple color scheme"
-            background = "isolated on white background"
-        elif 'cottagecore' in theme or 'mushroom' in theme or 'forest' in theme or 'nature' in theme:
-            style = "hand-drawn botanical elements"
-            colors = "sage green and cream color palette"
-            background = "clean white background"
-        elif 'cyberpunk' in theme or 'neon' in theme or 'geometric' in theme or 'grid' in theme:
-            style = "modern geometric style"
-            colors = "electric blue and hot pink on black background"
-            background = "vector art"
-        elif 'motivational' in theme or 'typography' in theme or 'quote' in theme or 'text' in theme:
-            style = "bold modern typography"
-            colors = "black and white with gold accent"
-            background = "clean minimalist layout"
-        elif 'abstract' in theme or 'fluid' in theme or 'wave' in theme or 'pattern' in theme:
-            style = "artistic fluid pattern"
-            colors = "millennial pink and ocean blue gradient"
-            background = "minimalist composition"
-        else:
-            # Default style based on index
-            styles = [
-                "minimalist clean style", 
-                "vintage distressed style", 
-                "modern abstract style", 
-                "geometric pattern style", 
-                "hand-drawn illustration style"
-            ]
-            colors = [
-                "black and white with single accent color",
-                "earthy tones with cream background", 
-                "neon colors on dark background", 
-                "pastel color palette", 
-                "monochromatic gradient"
-            ]
-            style = styles[index % len(styles)]
-            colors = colors[index % len(colors)]
-            background = "professional vector art isolated on white"
-        
-        # Base prompt structure
-        base_prompt = f"{theme} t-shirt design, {colors}, {style}, {background}, commercial use ready, high detail line art, printing optimized vector graphics"
-        
-        return base_prompt
-
-    def send_telegram_report(self, prompts: List[str], research_data: Dict[str, Any]):
+    def send_telegram_report(self, prompts: List[str], research_ Dict[str, Any]):
         """Send comprehensive report via Telegram"""
         logger.info("📲 Sending Telegram report...")
         
@@ -567,12 +487,12 @@ class AutonomousTShirtAgent:
             logger.error(f"❌ Failed to send Telegram report: {str(e)}")
             return False
 
-    def _create_telegram_report(self, prompts: List[str], research_data: Dict[str, Any]) -> str:
+    def _create_telegram_report(self, prompts: List[str], research_ Dict[str, Any]) -> str:
         """Create formatted Telegram report"""
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M')
         
         report = f"""
-🤖 <b>AUTONOMOUS T-SHIRT PROMPT GENERATOR</b>
+🤖 <b>TRUE AUTONOMOUS T-SHIRT PROMPT GENERATOR</b>
 ⏱️ {current_time}
 📊 <b>RESEARCH SUMMARY</b>
 • Platforms analyzed: TikTok, Instagram, Reddit, Pinterest, Fiverr
@@ -584,8 +504,11 @@ class AutonomousTShirtAgent:
 
 """
         
-        for i, prompt in enumerate(prompts, 1):
-            report += f"{i}. <code>{prompt}</code>\n\n"
+        if prompts:
+            for i, prompt in enumerate(prompts, 1):
+                report += f"{i}. <code>{prompt}</code>\n\n"
+        else:
+            report += "<b>No prompts generated</b> - No research data found or insufficient trends identified\n\n"
         
         report += """
 ✅ <b>USAGE INSTRUCTIONS</b>
@@ -607,7 +530,7 @@ class AutonomousTShirtAgent:
 
     def run_autonomous_cycle(self):
         """Run complete autonomous cycle"""
-        logger.info("🚀 Starting autonomous research and prompt generation cycle...")
+        logger.info("🚀 Starting true autonomous research and prompt generation cycle...")
         start_time = time.time()
         
         try:
@@ -616,7 +539,7 @@ class AutonomousTShirtAgent:
             research_data = self.conduct_comprehensive_research()
             
             # Step 2: Generate prompts from research
-            logger.info("🎨 Step 2: Generating unique prompts from research data")
+            logger.info("🤖 Step 2: Generating unique prompts from research data using agentic workflow")
             prompts = self.generate_prompts_from_research(research_data)
             
             # Step 3: Send report
@@ -637,8 +560,8 @@ class AutonomousTShirtAgent:
 def main():
     """Main entry point"""
     try:
-        logger.info("🎯 Initializing Autonomous T-Shirt Prompt Generator")
-        agent = AutonomousTShirtAgent()
+        logger.info("🎯 Initializing True Autonomous T-Shirt Prompt Generator")
+        agent = TrueAutonomousTShirtAgent()
         agent.run_autonomous_cycle()
         logger.info("🎉 Autonomous cycle completed successfully!")
         return 0
