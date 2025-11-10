@@ -64,13 +64,11 @@ class TrueAgenticAgent:
         search_queries = [
             f"trending tshirt designs {current_date} viral",
             f"fiverr best selling graphic tees 2025",
-            f"social media viral tshirt designs tiktok instagram",
-            f"tshirt design market trends pricing",
-            f"emerging tshirt styles minimalist vintage geometric"
+            f"social media viral tshirt designs tiktok instagram"
         ]
         
         try:
-            for query in search_queries[:3]:  # Limit to 3 queries for reliability
+            for query in search_queries:
                 try:
                     logger.info(f"🌐 Searching: {query}")
                     
@@ -80,71 +78,70 @@ class TrueAgenticAgent:
                         'Accept-Language': 'en-US,en;q=0.5',
                     }
                     
-                    params = {
-                        'q': query,
-                        'format': 'json'
-                    }
-                    
-                    # Try API endpoint first
+                    # Try Bing search as primary method
+                    bing_url = f"https://www.bing.com/search?q={query}"
                     response = requests.get(
-                        'https://duckduckgo.com',
-                        params=params,
+                        bing_url,
                         headers=headers,
                         timeout=15
                     )
                     
-                    if response.status_code == 200 and response.text.strip():
-                        try:
-                            # Parse JSON response
-                            data = json.loads(response.text)
-                            results = data.get('results', [])
-                            
-                            for result in results[:2]:  # Take top 2 results
-                                search_results.append({
-                                    'title': result.get('title', ''),
-                                    'snippet': result.get('body', ''),
-                                    'url': result.get('url', 'https://duckduckgo.com')
-                                })
-                            
-                            time.sleep(3)  # Rate limiting
-                            continue
-                        except json.JSONDecodeError:
-                            pass
-                    
-                    # Fallback to HTML search if API fails
-                    html_params = {'q': query}
-                    html_response = requests.get(
-                        'https://duckduckgo.com/html',
-                        params=html_params,
-                        headers=headers,
-                        timeout=15
-                    )
-                    
-                    if html_response.status_code == 200:
-                        soup = BeautifulSoup(html_response.text, 'html.parser')
-                        results = soup.find_all('div', class_='result')
+                    if response.status_code == 200:
+                        soup = BeautifulSoup(response.text, 'html.parser')
+                        # Find search results - Bing uses different class names
+                        results = soup.find_all('li', class_='b_algo')
                         
-                        for result in results[:2]:
-                            title_elem = result.find('h2', class_='result__title')
-                            snippet_elem = result.find('a', class_='result__snippet')
+                        for result in results[:3]:  # Take top 3 results
+                            title_elem = result.find('h2')
+                            snippet_elem = result.find('p')
                             
                             if title_elem and snippet_elem:
                                 search_results.append({
                                     'title': title_elem.get_text(strip=True),
                                     'snippet': snippet_elem.get_text(strip=True),
-                                    'url': 'https://duckduckgo.com'
+                                    'url': 'https://bing.com'
                                 })
                         
-                        time.sleep(4)  # Longer delay for HTML parsing
+                        time.sleep(2)  # Rate limiting between searches
+                        continue
                         
                 except Exception as e:
-                    logger.warning(f"⚠️ Search failed for '{query}': {str(e)}")
-                    time.sleep(2)
+                    logger.warning(f"⚠️ Bing search failed for '{query}': {str(e)}")
+                
+                # Fallback to Reddit search if Bing fails
+                try:
+                    reddit_url = f"https://www.reddit.com/search/?q={query.replace(' ', '%20')}"
+                    response = requests.get(
+                        reddit_url,
+                        headers=headers,
+                        timeout=15
+                    )
+                    
+                    if response.status_code == 200:
+                        soup = BeautifulSoup(response.text, 'html.parser')
+                        # Find Reddit posts
+                        posts = soup.find_all('shreddit-post')
+                        
+                        for post in posts[:2]:  # Take top 2 posts
+                            title = post.get('post-title', '')
+                            if title:
+                                search_results.append({
+                                    'title': title,
+                                    'snippet': f"Reddit discussion about {title.lower()}",
+                                    'url': 'https://reddit.com'
+                                })
+                        
+                        time.sleep(3)  # Longer delay for Reddit
+                        continue
+                        
+                except Exception as e:
+                    logger.warning(f"⚠️ Reddit search failed for '{query}': {str(e)}")
             
-            # If no results found, use comprehensive fallback data
-            if not search_results:
-                logger.info("💡 Using fallback research data due to search failures")
-                search_results = self._get_fallback_research_data()
+            # If we have minimal results, supplement with fallback data
+            if len(search_results) < 3:
+                logger.info(f"💡 Supplementing with fallback data ({len(search_results)}/3 results found)")
+                fallback_data = self._get_fallback_research_data()
+                search_results.extend(fallback_data[:5 - len(search_results)])
             
             logger.info(f"✅ Web search completed with {len(search_results)} results")
             return search_results
