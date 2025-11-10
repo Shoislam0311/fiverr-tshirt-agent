@@ -4,7 +4,7 @@ import json
 import requests
 import logging
 from datetime import datetime, timedelta
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import httpx
 from openai import OpenAI
 import random
@@ -46,7 +46,6 @@ class TrueAgenticAgent:
             logger.error(f"❌ Failed to configure OpenRouter API: {str(e)}")
             raise
         
-        # Initialize web search capability
         logger.info("✅ Agent initialized with full web search capability")
 
     def _clean_env_var(self, value: str) -> str:
