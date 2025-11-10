@@ -184,7 +184,7 @@ class TrueAgenticAgent:
             }
         ]
 
-    def generate_dynamic_content(self, research_ List[Dict[str, str]]) -> str:
+    def generate_dynamic_content(self, research_data: List[Dict[str, str]]) -> str:
         """Generate completely unique content with full MiniMax M2 capability - NO TEMPLATES"""
         logger.info("🧠 Activating MiniMax M2 full capability mode...")
         
@@ -256,7 +256,7 @@ class TrueAgenticAgent:
             logger.error(f"❌ AI content generation failed: {str(e)}")
             return self._generate_emergency_content(research_data)
 
-    def _generate_emergency_content(self, research_ List[Dict[str, str]]) -> str:
+    def _generate_emergency_content(self, research_data: List[Dict[str, str]]) -> str:
         """Generate emergency content when AI fails - still unique and dynamic"""
         logger.info("🔥 Generating emergency content with full creative autonomy...")
         
