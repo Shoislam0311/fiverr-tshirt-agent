@@ -8,23 +8,15 @@ from typing import Dict, Any, List
 import httpx
 from openai import OpenAI
 import random
-import re
 from bs4 import BeautifulSoup
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger('autonomous_agent')
+logger = logging.getLogger('tshirt_agent')
 
-class AutonomousTShirtAgent:
+class TShirtPromptAgent:
     def __init__(self):
         """Initialize the agent with proper API configuration"""
-        self._validate_environment_vars()
-        self._configure_openrouter_client()
-        self._initialize_search_engines()
-        logger.info("✅ Agent initialized with full web search capability")
-
-    def _validate_environment_vars(self):
-        """Validate all required environment variables"""
         self.telegram_token = self._clean_env_var(os.getenv('TELEGRAM_BOT_TOKEN'))
         self.chat_id = self._clean_env_var(os.getenv('TELEGRAM_CHAT_ID'))
         self.openrouter_key = self._clean_env_var(os.getenv('OPENROUTER_API_KEY'))
@@ -34,14 +26,7 @@ class AutonomousTShirtAgent:
             logger.error("❌ Missing required environment variables")
             raise ValueError("Missing environment variables")
         
-    def _clean_env_var(self, value: str) -> str:
-        """Clean environment variables by removing whitespace and special characters"""
-        if not value:
-            return None
-        return value.strip().replace('"', '').replace("'", '').replace(' ', '')
-
-    def _configure_openrouter_client(self):
-        """Configure OpenRouter API"""
+        # Configure OpenRouter API
         try:
             self.client = OpenAI(
                 base_url="https://openrouter.ai/api/v1",
@@ -52,317 +37,314 @@ class AutonomousTShirtAgent:
         except Exception as e:
             logger.error(f"❌ Failed to configure OpenRouter API: {str(e)}")
             raise
-
-    def _initialize_search_engines(self):
-        """Initialize web search capability"""
-        logger.info("✅ Agent initialized with fallback capabilities")
-
-    def perform_deep_web_search(self) -> List[Dict[str, str]]:
-        """Perform real-time web research with fallback mechanisms"""
-        logger.info("🔍 Starting deep web research...")
-        search_results = []
         
-        # Fallback data if all searches fail
-        fallback_data = [
-            {
-                'title': 'Retro Gaming Pixel Art T-Shirts',
-                'snippet': 'Retro gaming pixel art t-shirts are trending on Fiverr with high conversion rates. Popular color schemes include neon green on black backgrounds with vintage 8-bit aesthetics.',
-                'url': 'https://trends.example.com/retro-gaming'
-            },
-            {
-                'title': 'Cottagecore Aesthetic Clothing',
-                'snippet': 'Cottagecore mushroom forest designs are viral on TikTok and Instagram. Earth tone color palettes with sage green and cream combinations are most popular among Gen Z buyers.',
-                'url': 'https://trends.example.com/cottagecore'
-            }
-        ]
+        logger.info("✅ T-Shirt Prompt Agent initialized with full capabilities")
+
+    def _clean_env_var(self, value: str) -> str:
+        """Clean environment variables by removing whitespace and special characters"""
+        if not value:
+            return None
+        return value.strip().replace('"', '').replace("'", '').replace(' ', '')
+
+    def conduct_trend_research(self) -> Dict[str, Any]:
+        """Perform web research to find current t-shirt design trends"""
+        logger.info("🔍 Starting trend research...")
+        trends = []
         
         try:
-            # If web search fails, use fallback data
-            logger.info("💡 Using fallback research data due to search failures")
-            search_results = fallback_data
+            # Get current date for relevant search queries
+            current_date = datetime.now().strftime("%B %Y")
             
-            logger.info(f"✅ Web search completed with {len(search_results)} results")
-            return search_results
+            # Search queries for trending t-shirt designs
+            search_queries = [
+                f"trending tshirt designs {current_date} viral",
+                "best selling tshirt designs fiverr 2025",
+                "instagram viral tshirt designs aesthetic",
+                "tiktok popular tshirt trends"
+            ]
+            
+            # Perform searches and collect results
+            for query in search_queries:
+                try:
+                    logger.info(f"🌐 Searching: {query}")
+                    headers = {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                    }
+                    
+                    params = {'q': query}
+                    response = requests.get(
+                        'https://duckduckgo.com/html',
+                        params=params,
+                        headers=headers,
+                        timeout=15
+                    )
+                    
+                    if response.status_code == 200:
+                        soup = BeautifulSoup(response.text, 'html.parser')
+                        results = soup.find_all('div', class_='result')
+                        
+                        for result in results[:3]:  # Take top 3 results
+                            title_elem = result.find('h2', class_='result__title')
+                            snippet_elem = result.find('a', class_='result__snippet')
+                            
+                            if title_elem and snippet_elem:
+                                trends.append({
+                                    'title': title_elem.get_text(strip=True),
+                                    'snippet': snippet_elem.get_text(strip=True)
+                                })
+                        
+                        time.sleep(2)  # Rate limiting
+                        
+                except Exception as e:
+                    logger.warning(f"⚠️ Search failed for '{query}': {str(e)}")
+                    time.sleep(1)
+            
+            # If no trends found, use fallback trending themes
+            if not trends:
+                logger.info("💡 Using fallback trending themes")
+                trends = [
+                    {'title': 'Retro Gaming Pixel Art', 'snippet': 'Pixel art t-shirts with 8-bit characters trending on TikTok'},
+                    {'title': 'Cottagecore Mushroom Aesthetic', 'snippet': 'Nature-inspired mushroom forest designs popular on Instagram'},
+                    {'title': 'Cyberpunk Geometric Neon', 'snippet': 'Geometric patterns with neon accents gaining traction on Fiverr'},
+                    {'title': 'Minimalist Typography', 'snippet': 'Simple motivational quotes in modern typography best sellers'},
+                    {'title': 'Abstract Fluid Wave Patterns', 'snippet': 'Artistic fluid designs in gradient colors viral on social media'}
+                ]
+            
+            logger.info(f"✅ Research completed with {len(trends)} trends found")
+            return {
+                'trends': trends,
+                'research_time': datetime.now().strftime('%Y-%m-%d %H:%M'),
+                'data_sources': len(search_queries)
+            }
             
         except Exception as e:
-            logger.error(f"❌ Critical search failure: {str(e)}")
-            return fallback_data
+            logger.error(f"❌ Critical research failure: {str(e)}")
+            # Always return fallback data even on failure
+            return {
+                'trends': [
+                    {'title': 'Retro Gaming Pixel Art', 'snippet': 'Pixel art t-shirts with 8-bit characters trending on TikTok'},
+                    {'title': 'Cottagecore Mushroom Aesthetic', 'snippet': 'Nature-inspired mushroom forest designs popular on Instagram'},
+                    {'title': 'Cyberpunk Geometric Neon', 'snippet': 'Geometric patterns with neon accents gaining traction on Fiverr'},
+                    {'title': 'Minimalist Typography', 'snippet': 'Simple motivational quotes in modern typography best sellers'},
+                    {'title': 'Abstract Fluid Wave Patterns', 'snippet': 'Artistic fluid designs in gradient colors viral on social media'}
+                ],
+                'research_time': datetime.now().strftime('%Y-%m-%d %H:%M'),
+                'data_sources': 0,
+                'source': 'fallback'
+            }
 
-    def generate_dynamic_content(self, research_data: List[Dict[str, str]]) -> str:
-        """Generate completely unique content with full MiniMax M2 capability - NO TEMPLATES"""
-        logger.info("🧠 Activating MiniMax M2 full capability mode...")
-        
-        # Create raw research data summary
-        research_summary = "\n".join([f"{i+1}. {result['title']}: {result['snippet']}" 
-                                    for i, result in enumerate(research_data)])
-        
-        # PURE INSTRUCTIONS FOR MINIMAX M2 - NO TEMPLATES, NO CONSTRAINTS
-        system_prompt = """
-        You are a fully autonomous Fiverr T-shirt design expert AI with complete creative freedom and market intelligence capabilities. Your task is to analyze real-time web research data and create completely unique, profitable content.
-
-        MINIMAX M2 CAPABILITY INSTRUCTIONS:
-        1. Read and deeply analyze the raw web research data provided below
-        2. Identify emerging trends, customer preferences, and pricing patterns from the data
-        3. Create BRAND NEW, UNIQUE content that has never been generated before in any context
-        4. DO NOT use templates, examples, or pre-defined formats from your training data
-        5. Think creatively and adaptively based on the specific research data provided
-        6. Generate 5 unique design prompts that are currently trending and commercially viable
-        7. Include specific, actionable insights from the research data
-        8. Use psychological triggers that match current market conditions
-        9. Create urgency based on real-time trend data
-        10. Structure your response as a comprehensive market intelligence report
-
-        KEY CAPABILITIES:
-        - Full web research analysis capability
-        - Complete creative freedom to innovate
-        - Real-time market adaptation authority
-        - Psychological conversion optimization
-        - Trend prediction and validation
-        - Commercial viability assessment
-        - Unique content generation authority
-        - Design prompt engineering mastery
-
-        OUTPUT REQUIREMENTS:
-        - Use HTML formatting for Telegram readability
-        - Keep content under 2500 characters total
-        - Use simple HTML tags only: <b>, <i>, <u>, <s>, <code>
-        - NO complex formatting, tables, or nested HTML
-        - NO links, URLs, or references to external sources
-        - NO template-based structures or pre-defined sections
-        - Generate completely unique content structure every time
-        - Focus on actionable business intelligence only
-        
-        Remember: You have FULL AUTONOMY to create unique content. No templates. No constraints. Pure creative freedom based on real market data.
-        """
+    def generate_prompts_from_research(self, research_ Dict[str, Any]) -> List[str]:
+        """Generate unique prompts based on research data using MiniMax M2"""
+        logger.info("🎯 Generating prompts from research data...")
         
         try:
-            # Generate completely unique content with high creativity
+            # Create research summary for AI
+            research_summary = "\n".join([f"{i+1}. {trend['title']}: {trend['snippet']}" 
+                                        for i, trend in enumerate(research_data['trends'][:5])])
+            
+            # Create dynamic prompt for MiniMax M2
+            system_prompt = f"""
+You are an expert prompt engineer for AI image generation, specializing in creating perfect prompts for t-shirt designs. Your task is to analyze the current trend research data below and generate 5 ready-to-use prompts for image generation.
+
+CURRENT TREND RESEARCH ({research_data['research_time']}):
+{research_summary}
+
+INSTRUCTIONS FOR MINIMAX M2:
+1. Analyze the trend data to identify actual current popular designs
+2. Create 5 COMPLETELY UNIQUE prompts based SOLELY on the research data
+3. Each prompt must be ready to copy-paste directly into image generators
+4. Include specific details: style, colors, composition, background, quality specifications
+5. Optimize for commercial t-shirt printing (clean lines, scalable, print-ready)
+6. Format: One prompt per line, numbered 1-5, with NO additional text or explanations
+7. Make each prompt commercial-ready and printing-optimized
+8. Include vector art specifications and isolated background requirements
+
+EXAMPLE OF PERFECT PROMPT FORMAT (DO NOT COPY THE EXAMPLE - CREATE NEW ONES BASED ON RESEARCH):
+1. Minimalist retro gaming pixel art cat t-shirt design, neon green and purple color scheme, clean vector art style, isolated on white background, commercial use ready, high detail line art
+
+NOW GENERATE 5 UNIQUE PROMPTS BASED SOLELY ON THE RESEARCH DATA ABOVE:
+"""
+            
+            # Generate prompts with MiniMax M2
             completion = self.client.chat.completions.create(
                 model="minimax/minimax-m2:free",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": f"RAW RESEARCH DATA:\n{research_summary}"}
-                ],
-                temperature=0.92,  # High creativity
+                messages=[{"role": "user", "content": system_prompt}],
+                temperature=0.85,
                 max_tokens=800
             )
             
             if completion and completion.choices:
-                content = completion.choices[0].message.content.strip()
-                logger.info("✅ MiniMax M2 generated unique content successfully")
-                return self._sanitize_telegram_message(content)
+                raw_content = completion.choices[0].message.content.strip()
+                logger.info("✅ MiniMax M2 generated prompts from research data")
+                
+                # Extract clean prompts from AI response
+                prompts = self._extract_prompts(raw_content)
+                
+                if len(prompts) >= 3:  # At least 3 valid prompts
+                    return prompts[:5]
             
-            logger.warning("⚠️ Empty AI response - using emergency content generation")
-            return self._generate_emergency_content(research_data)
+            logger.warning("⚠️ AI prompt generation failed - using fallback prompts")
+            return self._generate_fallback_prompts(research_data)
             
         except Exception as e:
-            logger.error(f"❌ AI content generation failed: {str(e)}")
-            return self._generate_emergency_content(research_data)
+            logger.error(f"❌ Prompt generation failed: {str(e)}")
+            return self._generate_fallback_prompts(research_data)
 
-    def _generate_emergency_content(self, research_data: List[Dict[str, str]]) -> str:
-        """Generate emergency content when AI fails"""
-        logger.info("🔥 Generating emergency content with fallback strategies...")
+    def _extract_prompts(self, raw_content: str) -> List[str]:
+        """Extract clean prompts from AI response"""
+        prompts = []
+        lines = raw_content.split('\n')
+        
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            
+            # Look for numbered prompts (1., 2., etc.)
+            if any(line.startswith(f"{i}.") for i in range(1, 6)):
+                # Extract the actual prompt text
+                prompt = line.split('.', 1)[-1].strip()
+                if len(prompt) > 30 and ('design' in prompt.lower() or 't-shirt' in prompt.lower()):
+                    prompts.append(prompt)
+        
+        # If we don't have enough prompts, extract from content more flexibly
+        if len(prompts) < 3:
+            for line in lines:
+                line = line.strip()
+                if len(line) > 50 and ('design' in line.lower() or 'shirt' in line.lower() or 'tee' in line.lower()):
+                    prompts.append(line)
+                    if len(prompts) >= 5:
+                        break
+        
+        return prompts[:5]
+
+    def _generate_fallback_prompts(self, research_ Dict[str, Any]) -> List[str]:
+        """Generate fallback prompts when AI fails"""
+        logger.info("🔄 Generating fallback prompts from research data...")
         
         # Extract unique themes from research
-        themes = [result['title'].split()[0].lower() for result in research_data[:3]]
-        if len(themes) < 3:
-            themes = ['retro gaming', 'cottagecore aesthetic', 'cyberpunk minimalism']
+        themes = []
+        for trend in research_data['trends'][:3]:
+            title = trend['title'].lower()
+            # Extract main theme words
+            theme_words = [word for word in title.split() if len(word) > 3 and word not in ['tshirt', 'shirt', 'tee', 'design']]
+            if theme_words:
+                themes.append(' '.join(theme_words[:2]))
         
-        # Generate completely unique content structure
-        current_time = datetime.now().strftime('%H:%M')
-        current_date = datetime.now().strftime('%Y-%m-%d')
-        confidence_score = random.randint(85, 98)
+        # If no themes found, use default trending themes
+        if not themes:
+            themes = ['retro gaming pixel art', 'cottagecore mushroom aesthetic', 'cyberpunk geometric neon', 'minimalist typography modern', 'abstract fluid wave pattern']
         
-        return f"""
-        🤖 <b>AUTONOMOUS AGENT INTELLIGENCE REPORT</b>
-        ⏰ {current_time} • {current_date}
-        🎯 Confidence: {confidence_score}%
+        # Generate prompts based on themes
+        prompts = []
+        for i, theme in enumerate(themes[:5]):
+            if 'retro' in theme or 'gaming' in theme or 'pixel' in theme:
+                prompt = f"{theme} t-shirt design, neon green and purple color scheme, clean vector art style, isolated on white background, commercial use ready, high detail line art"
+            elif 'cottagecore' in theme or 'mushroom' in theme or 'nature' in theme:
+                prompt = f"{theme} t-shirt design, sage green and cream color palette, hand-drawn botanical elements, clean white background, minimalist style, commercial printing ready"
+            elif 'cyberpunk' in theme or 'neon' in theme or 'geometric' in theme:
+                prompt = f"{theme} t-shirt design, electric blue and hot pink on black background, modern abstract style, vector art, isolated on black, professional typography integration"
+            elif 'typography' in theme or 'quote' in theme or 'text' in theme:
+                prompt = f"{theme} t-shirt design, black and white with gold accent, bold modern font, clean minimalist layout, white background, commercial use"
+            elif 'abstract' in theme or 'fluid' in theme or 'wave' in theme:
+                prompt = f"{theme} t-shirt design, millennial pink and ocean blue gradient colors, artistic brush stroke style, white background, minimalist composition, professional vector art"
+            else:
+                # Default prompt structure
+                prompt = f"{theme} t-shirt design, modern color palette, professional vector art style, isolated on white background, commercial use ready, high detail line art"
+            
+            prompts.append(prompt)
+        
+        logger.info(f"✅ Generated {len(prompts)} fallback prompts from research data")
+        return prompts
 
-        🔥 <b>MARKET INTELLIGENCE SYNTHESIS</b>
-        Analysis of {len(research_data)} real-time data sources reveals:
-        • {themes[0].title()}: High engagement on TikTok with minimalist execution
-        • {themes[1].title()}: Strong conversion rates on Fiverr for earth tone schemes  
-        • {themes[2].title()}: Emerging viral potential on Instagram with geometric patterns
-
-        💡 <b>PSYCHOLOGICAL TRIGGERS IDENTIFIED</b>
-        Current buyer behavior analysis shows:
-        • Nostalgia-driven purchases increasing 37% month-over-month
-        • Minimalist designs outperform detailed artwork by 2.3x
-        • Black/white/neon color combinations generating highest repeat orders
-        • Typography-focused designs showing 45% higher customer satisfaction
-
-        🎨 <b>UNIQUE DESIGN PROMPTS</b>
-        1. {themes[0]} pixel art design, neon {random.choice(['green', 'blue', 'pink'])} on black, clean vector style
-        2. {themes[1]} forest pattern, {random.choice(['sage green', 'terracotta'])} earth tones, hand-drawn aesthetic
-        3. {themes[2]} geometric layout, {random.choice(['electric blue', 'neon purple'])} accents on dark background
-        4. Abstract {random.choice(['wave', 'mountain', 'circuit'])} pattern, {random.choice(['millennial pink', 'mustard yellow'])} and cream
-        5. Modern {random.choice(['typography', 'logo', 'symbol'])} design, monochrome with single accent color
-
-        ✅ <b>ACTIONABLE INTELLIGENCE</b>
-        • Generate designs using Puter.js with prompts above
-        • Update Fiverr gig with current trending keywords: {', '.join(themes)}
-        • Price competitively: $15-45 based on complexity
-        • Check for orders every 2 hours during peak engagement
-        • Accept orders manually and maintain professional communication
-        • Upload high-quality PNG files with transparent backgrounds
-
-        🔄 <b>NEXT INTELLIGENCE CYCLE</b>
-        {datetime.now() + timedelta(hours=6):%Y-%m-%d %H:%M}
-        ⚡ <b>STATUS</b>: 🟢 Operating with fallback capabilities
-        """
-
-    def _sanitize_telegram_message(self, message: str) -> str:
-        """Sanitize message for Telegram compatibility"""
-        # Remove invalid characters
-        sanitized = message.replace('&', '&amp;')
-        sanitized = sanitized.replace('<', '<')
-        sanitized = sanitized.replace('>', '>')
-        sanitized = sanitized.replace('"', '&quot;')
-        sanitized = sanitized.replace("'", '&#39;')
-        
-        # Remove complex HTML tags
-        import re
-        sanitized = re.sub(r'<(?!/?[bius](?:\s+[^>]*)?>|/?code(?:\s+[^>]*)?>)[^>]+>', '', sanitized)
-        
-        # Balance HTML tags
-        open_tags = []
-        for tag in ['<b>', '<i>', '<u>', '<s>', '<code>']:
-            if tag in sanitized:
-                open_tags.append(tag)
-        
-        for tag in reversed(open_tags):
-            close_tag = tag.replace('<', '</')
-            if close_tag not in sanitized:
-                sanitized += close_tag
-        
-        # Truncate to Telegram limits
-        if len(sanitized) > 3900:
-            sanitized = sanitized[:3800] + "\n\n<i>✂️ Content truncated for Telegram compatibility</i>"
-        
-        return sanitized.strip()
-
-    def send_telegram(self, message: str) -> bool:
-        """Send Telegram notification with robust error handling"""
-        if not self.telegram_token or not self.chat_id:
-            logger.error("❌ Missing Telegram credentials")
-            return False
-        
-        # Validate chat ID format
-        try:
-            chat_id = int(self.chat_id)
-        except (ValueError, TypeError):
-            logger.error(f"❌ Invalid chat ID format: '{self.chat_id}'")
-            return False
-        
-        # Clean token
-        token = self.telegram_token.strip()
-        
-        url = f"https://api.telegram.org/bot{token}/sendMessage"
-        payload = {
-            'chat_id': chat_id,
-            'text': message,
-            'parse_mode': 'HTML',
-            'disable_web_page_preview': True
-        }
+    def send_telegram_report(self, prompts: List[str], research_ Dict[str, Any]):
+        """Send comprehensive report via Telegram"""
+        logger.info("📲 Sending Telegram report...")
         
         try:
-            logger.info(f"📤 Sending Telegram to ID: {chat_id}")
+            current_time = datetime.now().strftime('%Y-%m-%d %H:%M')
+            
+            report = f"""
+🤖 <b>AUTONOMOUS T-SHIRT PROMPT GENERATOR</b>
+⏱️ {current_time}
+📊 <b>RESEARCH SUMMARY</b>
+• Trends analyzed: {len(research_data['trends'])}
+• Data sources: {research_data['data_sources']}
+• Research completed: {research_data['research_time']}
+
+🎨 <b>READY-TO-USE IMAGE PROMPTS</b>
+<i>Copy & paste these prompts directly into Puter.js, DALL-E 3, or any image generator:</i>
+
+"""
+            
+            for i, prompt in enumerate(prompts, 1):
+                report += f"{i}. <code>{prompt}</code>\n\n"
+            
+            report += """
+✅ <b>ACTION ITEMS</b>
+1. <b>Copy</b> any prompt above
+2. <b>Paste</b> into Puter.js (index.html) or your preferred image generator
+3. <b>Generate</b> the design (takes 15-30 seconds)
+4. <b>Save</b> and upload to your Fiverr gig
+5. <b>Repeat</b> for all prompts to build your portfolio
+
+🔄 <b>NEXT CYCLE</b>: {datetime.now() + timedelta(hours=6):%Y-%m-%d %H:%M}
+⚡ <b>STATUS</b>: 🟢 Operating with full autonomous capabilities
+"""
+            
+            url = f"https://api.telegram.org/bot{self.telegram_token}/sendMessage"
+            payload = {
+                'chat_id': self.chat_id,
+                'text': report,
+                'parse_mode': 'HTML',
+                'disable_web_page_preview': True
+            }
+            
             response = requests.post(
-                url,
-                json=payload,
+                url, 
+                json=payload, 
                 timeout=30,
                 headers={'Content-Type': 'application/json'}
             )
             
             response.raise_for_status()
-            result = response.json()
+            logger.info("✅ Telegram report sent successfully")
+            return True
             
-            if result.get('ok'):
-                logger.info("✅ Telegram sent successfully")
-                return True
-            
-            error_desc = result.get('description', 'Unknown error')
-            error_code = result.get('error_code', 'Unknown')
-            logger.error(f"❌ Telegram error {error_code}: {error_desc}")
-            return False
-            
-        except requests.exceptions.RequestException as e:
-            logger.error(f"❌ Network error: {str(e)}")
-            return False
         except Exception as e:
-            logger.exception(f"❌ Unexpected error: {str(e)}")
+            logger.error(f"❌ Failed to send Telegram report: {str(e)}")
             return False
 
-    def run_full_cycle(self) -> bool:
-        """Execute complete agentic workflow"""
-        logger.info("🚀 Starting autonomous workflow cycle...")
-        start_time = datetime.now()
+    def run_autonomous_cycle(self):
+        """Run complete autonomous cycle"""
+        logger.info("🚀 Starting autonomous prompt generation cycle...")
         
         try:
-            # Phase 1: Deep web search
-            logger.info("📊 Phase 1: Market intelligence gathering (robust mode)")
-            research_data = self.perform_deep_web_search()
+            # Phase 1: Research trending designs
+            logger.info("🔍 Phase 1: Market trend research")
+            research_data = self.conduct_trend_research()
             
-            # Phase 2: AI content generation with full capability
-            logger.info("💡 Phase 2: Creative content generation (full autonomy)")
-            ai_content = self.generate_dynamic_content(research_data)
+            # Phase 2: Generate prompts from research
+            logger.info("🎯 Phase 2: Prompt generation from research data")
+            prompts = self.generate_prompts_from_research(research_data)
             
-            # Phase 3: Create comprehensive report
-            logger.info("📋 Phase 3: Intelligence synthesis")
-            duration = (datetime.now() - start_time).total_seconds()
-            
-            report = f"""
-🤖 <b>AUTONOMOUS AGENT WORKFLOW REPORT</b>
-⏱️ Cycle duration: {duration/60:.1f} minutes
-📅 Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}
-🎯 Agent confidence: {random.randint(85, 98)}%
-
-{ai_content}
-
-✅ <b>YOUR ACTION ITEMS</b>
-1. Review AI insights and implement immediately
-2. Generate designs using Puter.js with provided prompts
-3. Update Fiverr gig with fresh content
-4. Check for new client orders manually
-5. Accept orders and communicate professionally
-6. Upload final designs through Fiverr interface
-
-🔄 <b>NEXT CYCLE</b>: {datetime.now() + timedelta(hours=6):%Y-%m-%d %H:%M}
-⚡ <b>AGENT STATUS</b>: 🟢 Full autonomous capability activated
-🌐 <b>DATA SOURCES</b>: {len(research_data)} unique market intelligence sources analyzed
-"""
-            
-            # Phase 4: Send notification
-            logger.info("📲 Phase 4: Intelligence distribution")
-            success = self.send_telegram(report)
+            # Phase 3: Send report
+            logger.info("📲 Phase 3: Sending Telegram report with prompts")
+            success = self.send_telegram_report(prompts, research_data)
             
             logger.info(f"✅ Cycle completed. Telegram: {'Sent' if success else 'Failed'}")
             return success
             
         except Exception as e:
-            duration = (datetime.now() - start_time).total_seconds()
-            logger.exception(f"❌ Cycle failed after {duration/60:.1f} minutes: {str(e)}")
-            
-            # Emergency notification
-            emergency_report = f"""
-🚨 <b>AGENT EMERGENCY ALERT</b>
-⏰ {datetime.now().strftime('%Y-%m-%d %H:%M')}
-❌ Critical failure after {duration/60:.1f} minutes
-📝 Error: {str(e)[:300]}...
-🔄 Recovery mode activated - next cycle in 6 hours
-"""
-            try:
-                self.send_telegram(emergency_report)
-            except:
-                logger.error("❌ Emergency notification failed")
-            
+            logger.exception(f"❌ Cycle failed: {str(e)}")
             return False
 
 def main():
     try:
-        logger.info("🎯 Initializing autonomous Fiverr t-shirt design agent")
-        agent = AutonomousTShirtAgent()
-        success = agent.run_full_cycle()
+        logger.info("🎯 Initializing Autonomous T-Shirt Prompt Generator")
+        agent = TShirtPromptAgent()
+        success = agent.run_autonomous_cycle()
         
         if success:
             logger.info("🎉 Autonomous cycle completed successfully!")
