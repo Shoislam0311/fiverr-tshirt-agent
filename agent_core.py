@@ -4,7 +4,7 @@ import json
 import requests
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 import httpx
 from openai import OpenAI
 import random
@@ -325,7 +325,7 @@ class TrueAutonomousTShirtAgent:
             logger.warning(f"⚠️ Bing search failed for query '{query}': {str(e)}")
             return []
 
-    def generate_prompts_from_research(self, research_ Dict[str, Any]) -> List[str]:
+    def generate_prompts_from_research(self, research_data: Dict[str, Any]) -> List[str]:
         """Generate unique prompts based SOLELY on actual research data - no predefined themes"""
         logger.info("🤖 Activating MiniMax M2 agentic workflow for prompt generation...")
         
@@ -448,7 +448,7 @@ class TrueAutonomousTShirtAgent:
         ]
         return all(required_elements)
 
-    def send_telegram_report(self, prompts: List[str], research_ Dict[str, Any]):
+    def send_telegram_report(self, prompts: List[str], research_data: Dict[str, Any]):
         """Send comprehensive report via Telegram"""
         logger.info("📲 Sending Telegram report...")
         
@@ -487,7 +487,7 @@ class TrueAutonomousTShirtAgent:
             logger.error(f"❌ Failed to send Telegram report: {str(e)}")
             return False
 
-    def _create_telegram_report(self, prompts: List[str], research_ Dict[str, Any]) -> str:
+    def _create_telegram_report(self, prompts: List[str], research_data: Dict[str, Any]) -> str:
         """Create formatted Telegram report"""
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M')
         
