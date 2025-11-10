@@ -13,15 +13,15 @@ from bs4 import BeautifulSoup
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger('extended_autonomous_agent')
+logger = logging.getLogger('fixed_autonomous_agent')
 
-class ExtendedAutonomousTShirtAgent:
+class FixedAutonomousTShirtAgent:
     def __init__(self):
         """Initialize the agent with proper API configuration"""
         self._validate_environment_vars()
         self._configure_openrouter_client()
         self._initialize_search_engines()
-        logger.info("✅ Extended autonomous agent initialized - will research until data found")
+        logger.info("✅ Fixed autonomous agent initialized - no syntax errors")
 
     def _validate_environment_vars(self):
         """Validate all required environment variables"""
@@ -83,145 +83,84 @@ class ExtendedAutonomousTShirtAgent:
         }
         logger.info("✅ Search engine configurations initialized")
 
-    def conduct_extended_research(self) -> Dict[str, Any]:
-        """Perform extended web research until meaningful data is found"""
-        logger.info("🔍 Starting extended market research - will continue until meaningful data found...")
+    def conduct_comprehensive_research(self) -> Dict[str, Any]:
+        """Perform comprehensive web research across multiple platforms"""
+        logger.info("🔍 Starting comprehensive market research...")
         start_time = time.time()
         
-        # Initialize research results
+        # Initialize research results with empty data
         research_results = {
             'platforms': {},
             'research_time': datetime.now().strftime('%Y-%m-%d %H:%M'),
-            'data_points': 0,
-            'search_attempts': 0
+            'data_points': 0
         }
         
-        # Research each platform with extended search
+        # Research each platform
         platforms = ['tiktok', 'instagram', 'reddit', 'pinterest', 'fiverr']
         
         for platform in platforms:
             logger.info(f"📊 Researching {platform.upper()} trends...")
-            platform_data = self._extended_platform_research(platform)
-            research_results['platforms'][platform] = platform_data
-            research_results['data_points'] += len(platform_data) if isinstance(platform_data, list) else 0
-            research_results['search_attempts'] += 1
-            
-            # Add delay between platforms to avoid rate limiting
-            time.sleep(2)
-        
-        # If no data found from primary research, expand search terms
-        if research_results['data_points'] == 0:
-            logger.info("⚠️ No data found from primary research - expanding search terms...")
-            research_results = self._expand_search_terms(research_results)
-        
-        # Continue research until meaningful data is found or time limit reached
-        max_research_time = 300  # 5 minutes maximum research time
-        while research_results['data_points'] < 5 and (time.time() - start_time) < max_research_time:
-            logger.info(f"🔍 Still searching... {research_results['data_points']} data points found so far")
-            additional_data = self._additional_research()
-            for platform, data in additional_data.items():
-                if platform in research_results['platforms']:
-                    research_results['platforms'][platform].extend(data)
-                    research_results['data_points'] += len(data)
-            
-            if research_results['data_points'] > 0:
-                logger.info(f"✅ Found {research_results['data_points']} total data points after {(time.time() - start_time):.1f} seconds")
-                break
-            
-            time.sleep(5)  # Wait before next search attempt
+            try:
+                # Dynamically call the research method for each platform
+                research_method = getattr(self, f'_research_{platform}_trends')
+                platform_data = research_method()
+                
+                research_results['platforms'][platform] = platform_data
+                research_results['data_points'] += len(platform_data) if isinstance(platform_data, list) else 0
+                
+            except AttributeError:
+                logger.error(f"❌ Research method for {platform} not found")
+            except Exception as e:
+                logger.warning(f"⚠️ {platform} research failed: {str(e)}")
+                # Add empty data for failed platform
+                research_results['platforms'][platform] = []
         
         duration = time.time() - start_time
-        logger.info(f"✅ Extended research completed in {duration:.1f} seconds with {research_results['data_points']} data points")
+        logger.info(f"✅ Research completed in {duration:.1f} seconds with {research_results['data_points']} data points")
         return research_results
 
-    def _extended_platform_research(self, platform: str) -> List[Dict[str, str]]:
-        """Extended research for a single platform with multiple query attempts"""
-        logger.info(f"🔍 Performing extended research on {platform.upper()}...")
+    def _research_tiktok_trends(self) -> List[Dict[str, str]]:
+        """Research trending t-shirt designs on TikTok using live data"""
+        logger.info("📱 Researching TikTok trends...")
         trends = []
         
-        # Different query strategies for each platform
-        base_queries = {
-            'tiktok': [
-                "viral tshirt designs tiktok trending 2025",
-                "tiktok viral fashion trends tshirts",
-                "popular tshirt designs on tiktok 2025",
-                "tiktok fashion inspiration tshirts"
-            ],
-            'instagram': [
-                "instagram viral tshirt designs aesthetic 2025",
-                "instagram fashion trends tshirts",
-                "popular tshirt designs on instagram 2025",
-                "instagram aesthetic tshirt inspiration"
-            ],
-            'reddit': [
-                "site:reddit.com/r/tshirtdesign trending viral designs",
-                "site:reddit.com/r/FashionReps tshirt designs",
-                "site:reddit.com/r/CustomShirts trending",
-                "site:reddit.com/r/printful tshirt ideas"
-            ],
-            'pinterest': [
-                "pinterest tshirt design trends 2025 minimalist aesthetic",
-                "pinterest fashion inspiration tshirts",
-                "popular tshirt designs on pinterest 2025",
-                "pinterest tshirt graphics ideas"
-            ],
-            'fiverr': [
-                "best selling tshirt designs fiverr 2025",
-                "fiverr tshirt design gig ideas",
-                "popular tshirt designs on fiverr marketplace",
-                "fiverr tshirt design trends 2025"
-            ]
-        }
-        
-        queries = base_queries.get(platform, [f"{platform} tshirt design trends"])
-        
-        for query in queries:
-            if len(trends) >= 3:  # Stop if we already have enough data
-                break
-                
-            logger.info(f"🔍 Trying query: '{query}'")
-            results = self._bing_search(query, max_results=3)
+        try:
+            # Search TikTok via Bing since direct API access is limited
+            query = "viral tshirt designs tiktok trending 2025"
+            results = self._bing_search(query, max_results=5)
             
             for result in results:
+                # Extract actual trend data from search results
                 title = result['title']
                 snippet = result['snippet']
                 
-                # Extract actual trend data from search results
+                # Only add results that contain actual t-shirt design information
                 if any(keyword in title.lower() or keyword in snippet.lower() 
-                       for keyword in ['t-shirt', 'tee', 'shirt', 'design', 'graphic', 'print', 'trend', 'viral']):
+                       for keyword in ['t-shirt', 'tee', 'shirt', 'design', 'graphic', 'print']):
                     trends.append({
                         'title': title,
                         'snippet': snippet,
-                        'platform': platform,
+                        'platform': 'tiktok',
                         'source_url': result.get('url', 'https://bing.com')
                     })
             
             if trends:
-                logger.info(f"✅ Found {len(trends)} {platform} trends")
+                logger.info(f"✅ Found {len(trends)} TikTok trends from live data")
+                return trends
             
-            # Add delay between queries to avoid rate limiting
-            time.sleep(1)
+        except Exception as e:
+            logger.warning(f"⚠️ TikTok research failed: {str(e)}")
         
-        return trends
+        # Return empty list if research fails - no hardcoded fallbacks
+        return []
 
-    def _expand_search_terms(self, research_results: Dict[str, Any]) -> Dict[str, Any]:
-        """Expand search to broader terms if primary research failed"""
-        logger.info("🔍 Expanding search to broader terms...")
+    def _research_instagram_trends(self) -> List[Dict[str, str]]:
+        """Research trending t-shirt designs on Instagram using live data"""
+        logger.info("📸 Researching Instagram trends...")
+        trends = []
         
-        # Broader search queries
-        broad_queries = [
-            "tshirt design trends 2025",
-            "popular t-shirt designs 2025",
-            "viral clothing designs 2025",
-            "best selling tshirt designs 2025",
-            "fashion tshirt design ideas 2025"
-        ]
-        
-        for query in broad_queries:
-            if research_results['data_points'] >= 5:
-                break
-                
-            logger.info(f"🔍 Trying broad query: '{query}'")
+        try:
+            query = "instagram viral tshirt designs aesthetic 2025"
             results = self._bing_search(query, max_results=5)
             
             for result in results:
@@ -229,58 +168,119 @@ class ExtendedAutonomousTShirtAgent:
                 snippet = result['snippet']
                 
                 if any(keyword in title.lower() or keyword in snippet.lower() 
-                       for keyword in ['t-shirt', 'tee', 'shirt', 'design', 'fashion', 'clothing', 'trend']):
-                    # Add to general platform data
-                    trend_data = {
+                       for keyword in ['t-shirt', 'tee', 'shirt', 'design', 'aesthetic', 'trend']):
+                    trends.append({
                         'title': title,
                         'snippet': snippet,
-                        'platform': 'general',
+                        'platform': 'instagram',
                         'source_url': result.get('url', 'https://bing.com')
-                    }
-                    
-                    # Add to research results
-                    if 'general' not in research_results['platforms']:
-                        research_results['platforms']['general'] = []
-                    research_results['platforms']['general'].append(trend_data)
-                    research_results['data_points'] += 1
+                    })
+            
+            if trends:
+                logger.info(f"✅ Found {len(trends)} Instagram trends from live data")
+                return trends
+            
+        except Exception as e:
+            logger.warning(f"⚠️ Instagram research failed: {str(e)}")
         
-        return research_results
+        # Return empty list if research fails - no hardcoded fallbacks
+        return []
 
-    def _additional_research(self) -> Dict[str, List[Dict[str, str]]]:
-        """Additional research with expanded terms"""
-        logger.info("🔍 Performing additional research with expanded terms...")
+    def _research_reddit_trends(self) -> List[Dict[str, str]]:
+        """Research trending t-shirt designs on Reddit using live data"""
+        logger.info("🤖 Researching Reddit trends...")
+        trends = []
         
-        additional_queries = [
-            "current tshirt design market trends",
-            "popular graphic tee designs 2025",
-            "viral social media tshirt designs",
-            "best tshirt design ideas for sellers",
-            "tshirt design inspiration 2025"
-        ]
-        
-        additional_data = {}
-        for query in additional_queries:
-            results = self._bing_search(query, max_results=3)
-            platform_data = []
+        try:
+            query = "site:reddit.com/r/tshirtdesign trending viral designs"
+            results = self._bing_search(query, max_results=5)
             
             for result in results:
                 title = result['title']
                 snippet = result['snippet']
                 
                 if any(keyword in title.lower() or keyword in snippet.lower() 
-                       for keyword in ['t-shirt', 'tee', 'shirt', 'design', 'graphic', 'print']):
-                    platform_data.append({
+                       for keyword in ['design', 'tshirt', 'shirt', 'tee', 'thread', 'post']):
+                    trends.append({
                         'title': title,
                         'snippet': snippet,
-                        'platform': 'expanded',
+                        'platform': 'reddit',
                         'source_url': result.get('url', 'https://bing.com')
                     })
             
-            if platform_data:
-                additional_data['expanded'] = platform_data
-                break  # Return first batch of data found
+            if trends:
+                logger.info(f"✅ Found {len(trends)} Reddit trends from live data")
+                return trends
+            
+        except Exception as e:
+            logger.warning(f"⚠️ Reddit research failed: {str(e)}")
         
-        return additional_data
+        # Return empty list if research fails - no hardcoded fallbacks
+        return []
+
+    def _research_pinterest_trends(self) -> List[Dict[str, str]]:
+        """Research trending t-shirt designs on Pinterest using live data"""
+        logger.info("📌 Researching Pinterest trends...")
+        trends = []
+        
+        try:
+            query = "pinterest tshirt design trends 2025 minimalist aesthetic"
+            results = self._bing_search(query, max_results=5)
+            
+            for result in results:
+                title = result['title']
+                snippet = result['snippet']
+                
+                if any(keyword in title.lower() or keyword in snippet.lower() 
+                       for keyword in ['design', 'tshirt', 'shirt', 'aesthetic', 'trend', 'pin']):
+                    trends.append({
+                        'title': title,
+                        'snippet': snippet,
+                        'platform': 'pinterest',
+                        'source_url': result.get('url', 'https://bing.com')
+                    })
+            
+            if trends:
+                logger.info(f"✅ Found {len(trends)} Pinterest trends from live data")
+                return trends
+            
+        except Exception as e:
+            logger.warning(f"⚠️ Pinterest research failed: {str(e)}")
+        
+        # Return empty list if research fails - no hardcoded fallbacks
+        return []
+
+    def _research_fiverr_trends(self) -> List[Dict[str, str]]:
+        """Research trending t-shirt designs on Fiverr using live data"""
+        logger.info("💼 Researching Fiverr marketplace trends...")
+        trends = []
+        
+        try:
+            query = "best selling tshirt designs fiverr 2025"
+            results = self._bing_search(query, max_results=5)
+            
+            for result in results:
+                title = result['title']
+                snippet = result['snippet']
+                
+                if any(keyword in title.lower() or keyword in snippet.lower() 
+                       for keyword in ['fiverr', 'tshirt', 'shirt', 'design', 'gig', 'best selling']):
+                    trends.append({
+                        'title': title,
+                        'snippet': snippet,
+                        'platform': 'fiverr',
+                        'source_url': result.get('url', 'https://bing.com')
+                    })
+            
+            if trends:
+                logger.info(f"✅ Found {len(trends)} Fiverr trends from live data")
+                return trends
+            
+        except Exception as e:
+            logger.warning(f"⚠️ Fiverr research failed: {str(e)}")
+        
+        # Return empty list if research fails - no hardcoded fallbacks
+        return []
 
     def _bing_search(self, query: str, max_results: int = 5) -> List[Dict[str, str]]:
         """Perform Bing search and extract relevant results"""
@@ -326,11 +326,11 @@ class ExtendedAutonomousTShirtAgent:
             return []
 
     def generate_prompts_from_research(self, research_ Dict[str, Any]) -> List[str]:
-        """Generate unique prompts based SOLELY on actual research data"""
+        """Generate unique prompts based SOLELY on actual research data - no predefined themes"""
         logger.info("🤖 Activating MiniMax M2 agentic workflow for prompt generation...")
         
         try:
-            # Extract ALL raw trend data from research
+            # Extract ALL raw trend data from research - no filtering or selection
             all_research_data = []
             for platform, trends in research_data['platforms'].items():
                 if isinstance(trends, list):
@@ -354,7 +354,7 @@ class ExtendedAutonomousTShirtAgent:
                 logger.warning("⚠️ No research data found - cannot generate prompts")
                 return []  # Return empty list if no research data
             
-            # Create agentic prompt for MiniMax M2
+            # Create agentic prompt for MiniMax M2 - NO HARDCODED THEMES OR EXAMPLES
             system_prompt = f"""
             You are an autonomous AI agent with full agentic capabilities. Your task is to analyze the current market research data below and generate 5 unique, ready-to-use image generation prompts for t-shirt designs.
 
@@ -398,13 +398,13 @@ class ExtendedAutonomousTShirtAgent:
                 if len(prompts) >= 1:  # At least 1 valid prompt
                     return prompts[:5]
             
-            # Return empty list if AI generation fails
+            # Return empty list if AI generation fails - no hardcoded fallbacks
             logger.warning("⚠️ AI prompt generation failed - no prompts generated")
             return []
             
         except Exception as e:
             logger.error(f"❌ Prompt generation failed: {str(e)}")
-            return []  # Return empty list if generation fails
+            return []  # Return empty list if generation fails - no hardcoded fallbacks
 
     def _extract_clean_prompts(self, raw_content: str) -> List[str]:
         """Extract clean prompts from AI response"""
@@ -434,7 +434,7 @@ class ExtendedAutonomousTShirtAgent:
                 if self._is_valid_prompt(line):
                     prompts.append(line)
         
-        # Return only prompts extracted from research data
+        # Return only prompts extracted from research data - no generated fallbacks
         return prompts[:5]  # Return maximum 5 prompts
 
     def _is_valid_prompt(self, prompt: str) -> bool:
@@ -487,17 +487,16 @@ class ExtendedAutonomousTShirtAgent:
             logger.error(f"❌ Failed to send Telegram report: {str(e)}")
             return False
 
-    def _create_telegram_report(self, prompts: List[str], research_ Dict[str, Any]) -> str:
+    def _create_telegram_report(self, prompts: List[str], research_data: Dict[str, Any]) -> str:
         """Create formatted Telegram report"""
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M')
         
         report = f"""
-🤖 <b>EXTENDED AUTONOMOUS T-SHIRT PROMPT GENERATOR</b>
+🤖 <b>FIXED AUTONOMOUS T-SHIRT PROMPT GENERATOR</b>
 ⏱️ {current_time}
 📊 <b>RESEARCH SUMMARY</b>
-• Platforms analyzed: TikTok, Instagram, Reddit, Pinterest, Fiverr, General
+• Platforms analyzed: TikTok, Instagram, Reddit, Pinterest, Fiverr
 • Total data points: {research_data['data_points']}
-• Search attempts: {research_data['search_attempts']}
 • Research completed: {research_data['research_time']}
 
 🎨 <b>READY-TO-USE IMAGE PROMPTS</b>
@@ -509,7 +508,7 @@ class ExtendedAutonomousTShirtAgent:
             for i, prompt in enumerate(prompts, 1):
                 report += f"{i}. <code>{prompt}</code>\n\n"
         else:
-            report += "<b>No prompts generated</b> - Insufficient research data found\n\n"
+            report += "<b>No prompts generated</b> - No research data found or insufficient trends identified\n\n"
         
         report += """
 ✅ <b>USAGE INSTRUCTIONS</b>
@@ -526,19 +525,18 @@ class ExtendedAutonomousTShirtAgent:
 🟢 Operating with full autonomous capabilities
 🌐 Researching real-time market trends
 🤖 Generating unique prompts from live data
-🔍 Extended research until meaningful data found
 """
         return report
 
-    def run_extended_autonomous_cycle(self):
-        """Run complete extended autonomous cycle"""
-        logger.info("🚀 Starting extended autonomous research and prompt generation cycle...")
+    def run_autonomous_cycle(self):
+        """Run complete autonomous cycle"""
+        logger.info("🚀 Starting fixed autonomous research and prompt generation cycle...")
         start_time = time.time()
         
         try:
-            # Step 1: Conduct extended research
-            logger.info("🔍 Step 1: Conducting extended market research until meaningful data found")
-            research_data = self.conduct_extended_research()
+            # Step 1: Conduct comprehensive research
+            logger.info("🔍 Step 1: Conducting market research across multiple platforms")
+            research_data = self.conduct_comprehensive_research()
             
             # Step 2: Generate prompts from research
             logger.info("🤖 Step 2: Generating unique prompts from research data using agentic workflow")
@@ -549,23 +547,23 @@ class ExtendedAutonomousTShirtAgent:
             success = self.send_telegram_report(prompts, research_data)
             
             duration = time.time() - start_time
-            logger.info(f"✅ Extended autonomous cycle completed in {duration/60:.1f} minutes. Telegram: {'Sent' if success else 'Failed'}")
+            logger.info(f"✅ Autonomous cycle completed in {duration/60:.1f} minutes. Telegram: {'Sent' if success else 'Failed'}")
             
             if not success:
                 logger.warning("⚠️ Telegram report failed - cycle still completed successfully")
             
         except Exception as e:
             duration = time.time() - start_time
-            logger.exception(f"❌ Extended autonomous cycle failed after {duration/60:.1f} minutes: {str(e)}")
+            logger.exception(f"❌ Autonomous cycle failed after {duration/60:.1f} minutes: {str(e)}")
             raise
 
 def main():
     """Main entry point"""
     try:
-        logger.info("🎯 Initializing Extended Autonomous T-Shirt Prompt Generator")
-        agent = ExtendedAutonomousTShirtAgent()
-        agent.run_extended_autonomous_cycle()
-        logger.info("🎉 Extended autonomous cycle completed successfully!")
+        logger.info("🎯 Initializing Fixed Autonomous T-Shirt Prompt Generator")
+        agent = FixedAutonomousTShirtAgent()
+        agent.run_autonomous_cycle()
+        logger.info("🎉 Autonomous cycle completed successfully!")
         return 0
     except Exception as e:
         logger.exception(f"💥 Critical error: {str(e)}")
