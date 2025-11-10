@@ -55,100 +55,68 @@ class TrueAgenticAgent:
             return None
         return value.strip().replace('"', '').replace("'", '').replace(' ', '')
 
-    def perform_deep_web_search(self) -> List[Dict[str, str]]:
-        """Perform real-time web search with fallback capabilities"""
-        logger.info("🔍 Starting deep web search with DuckDuckGo...")
-        search_results = []
+def perform_robust_web_search(self) -> List[Dict[str, str]]:
+    """Enhanced web search with multiple fallback strategies"""
+    try:
+        # Strategy 1: Use Bing API (free tier available)
+        bing_results = self._search_bing()
+        if bing_results and len(bing_results) >= 3:
+            return bing_results[:5]
         
-        # Dynamic search queries based on current trends
-        current_date = datetime.now().strftime("%B %Y")
-        search_queries = [
-            f"trending tshirt designs {current_date} viral",
-            f"fiverr best selling graphic tees 2025",
-            f"social media viral tshirt designs tiktok instagram",
-            f"tshirt design market trends pricing",
-            f"emerging tshirt styles minimalist vintage geometric"
-        ]
+        # Strategy 2: Use Reddit API for trending designs
+        reddit_results = self._search_reddit()
+        if reddit_results and len(reddit_results) >= 3:
+            return reddit_results[:5]
         
+        # Strategy 3: Use Pinterest public API
+        pinterest_results = self._search_pinterest()
+        if pinterest_results and len(pinterest_results) >= 3:
+            return pinterest_results[:5]
+        
+        # Final fallback
+        return self._get_fallback_research_data()
+        
+    except Exception as e:
+        logger.error(f"Enhanced search failed: {str(e)}")
+        return self._get_fallback_research_data()
+
+def _search_bing(self) -> List[Dict[str, str]]:
+    """Search Bing for trending t-shirt designs"""
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    }
+    
+    queries = [
+        "site:reddit.com/r/tshirtdesign trending",
+        "site:tiktok.com tshirt design viral",
+        "site:instagram.com graphic tee trending"
+    ]
+    
+    results = []
+    for query in queries:
         try:
-            for query in search_queries[:3]:  # Limit to 3 queries for reliability
-                try:
-                    logger.info(f"🌐 Searching: {query}")
-                    
-                    headers = {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                        'Accept-Language': 'en-US,en;q=0.5',
-                    }
-                    
-                    params = {
-                        'q': query,
-                        'format': 'json'
-                    }
-                    
-                    # Try API endpoint first
-                    response = requests.get(
-                        'https://duckduckgo.com',
-                        params=params,
-                        headers=headers,
-                        timeout=15
-                    )
-                    
-                    if response.status_code == 200 and response.text.strip():
-                        try:
-                            # Parse JSON response
-                            data = json.loads(response.text)
-                            results = data.get('results', [])
-                            
-                            for result in results[:2]:  # Take top 2 results
-                                search_results.append({
-                                    'title': result.get('title', ''),
-                                    'snippet': result.get('body', ''),
-                                    'url': result.get('url', 'https://duckduckgo.com')
-                                })
-                            
-                            time.sleep(3)  # Rate limiting
-                            continue
-                        except json.JSONDecodeError:
-                            pass
-                    
-                    # Fallback to HTML search if API fails
-                    html_params = {'q': query}
-                    html_response = requests.get(
-                        'https://duckduckgo.com/html',
-                        params=html_params,
-                        headers=headers,
-                        timeout=15
-                    )
-                    
-                    if html_response.status_code == 200:
-                        soup = BeautifulSoup(html_response.text, 'html.parser')
-                        results = soup.find_all('div', class_='result')
-                        
-                        for result in results[:2]:
-                            title_elem = result.find('h2', class_='result__title')
-                            snippet_elem = result.find('a', class_='result__snippet')
-                            
-                            if title_elem and snippet_elem:
-                                search_results.append({
-                                    'title': title_elem.get_text(strip=True),
-                                    'snippet': snippet_elem.get_text(strip=True),
-                                    'url': 'https://duckduckgo.com'
-                                })
-                        
-                        time.sleep(4)  # Longer delay for HTML parsing
-                        
-                except Exception as e:
-                    logger.warning(f"⚠️ Search failed for '{query}': {str(e)}")
-                    time.sleep(2)
+            response = requests.get(
+                f'https://www.bing.com/search?q={query}',
+                headers=headers,
+                timeout=10
+            )
             
-            # If no results found, use comprehensive fallback data
-            if not search_results:
-                logger.info("💡 Using fallback research data due to search failures")
-                search_results = self._get_fallback_research_data()
+            if response.status_code == 200:
+                # Simple title extraction from Bing results
+                titles = [title.strip() for title in response.text.split('<h2>') if 'tshirt' in title.lower()][:2]
+                for title in titles:
+                    results.append({
+                        'title': title,
+                        'snippet': f'Trending design found via Bing search: {title}',
+                        'url': 'https://bing.com'
+                    })
             
-            logger.info(f"✅ Web search completed with {len(search_results)} results")
-            return search_results
+            time.sleep(2)  # Rate limiting
+            
+        except Exception as e:
+            logger.warning(f"Bing search failed: {str(e)}")
+    
+    return results
             
         except Exception as e:
             logger.error(f"❌ Critical search failure: {str(e)}")
