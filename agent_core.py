@@ -188,7 +188,7 @@ class AutonomousTShirtAgent:
 
     def _research_reddit_trends(self) -> List[Dict[str, str]]:
         """Research trending t-shirt designs on Reddit"""
-        logger.info(".reddit Researching Reddit trends...")
+        logger.info("🤖 Researching Reddit trends...")
         trends = []
         
         try:
@@ -328,7 +328,7 @@ class AutonomousTShirtAgent:
             logger.warning(f"⚠️ Bing search failed for query '{query}': {str(e)}")
             return []
 
-    def generate_prompts_from_research(self, research_ Dict[str, Any]) -> List[str]:
+    def generate_prompts_from_research(self, research_data: Dict[str, Any]) -> List[str]:
         """Generate unique prompts based on actual research data"""
         logger.info("🎨 Generating prompts from research data...")
         
@@ -440,7 +440,7 @@ class AutonomousTShirtAgent:
         ]
         return all(required_elements)
 
-    def _generate_fallback_prompts(self, research_ Dict[str, Any]) -> List[str]:
+    def _generate_fallback_prompts(self, research_data: Dict[str, Any]) -> List[str]:
         """Generate fallback prompts when AI fails, based on research data"""
         logger.info("🔄 Generating fallback prompts from research data...")
         
@@ -528,7 +528,7 @@ class AutonomousTShirtAgent:
         
         return base_prompt
 
-    def send_telegram_report(self, prompts: List[str], research_ Dict[str, Any]):
+    def send_telegram_report(self, prompts: List[str], research_data: Dict[str, Any]):
         """Send comprehensive report via Telegram"""
         logger.info("📲 Sending Telegram report...")
         
@@ -567,7 +567,7 @@ class AutonomousTShirtAgent:
             logger.error(f"❌ Failed to send Telegram report: {str(e)}")
             return False
 
-    def _create_telegram_report(self, prompts: List[str], research_ Dict[str, Any]) -> str:
+    def _create_telegram_report(self, prompts: List[str], research_data: Dict[str, Any]) -> str:
         """Create formatted Telegram report"""
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M')
         
