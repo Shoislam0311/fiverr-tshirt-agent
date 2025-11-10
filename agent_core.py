@@ -325,7 +325,7 @@ class FixedAutonomousTShirtAgent:
             logger.warning(f"⚠️ Bing search failed for query '{query}': {str(e)}")
             return []
 
-    def generate_prompts_from_research(self, research_ Dict[str, Any]) -> List[str]:
+    def generate_prompts_from_research(self, research_data: Dict[str, Any]) -> List[str]:
         """Generate unique prompts based SOLELY on actual research data - no predefined themes"""
         logger.info("🤖 Activating MiniMax M2 agentic workflow for prompt generation...")
         
