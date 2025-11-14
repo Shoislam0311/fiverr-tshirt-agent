@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI T-Shirt Design Agent</title>
+    <script src="https://js.puter.com/v2/"></script>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AI T-Shirt Design Agent</h1>
+            <p>Your professional assistant for creating market-aware, trend-setting t-shirt designs.</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Left Panel: Trend Analysis -->
+            <div class="left-panel">
+                <section class="trend-section">
+                    <h2>Market Trend Analysis</h2>
+                    <button id="trend-btn" class="btn">🚀 Analyze Latest Trends</button>
+                    <div id="trend-status" class="status-message">Click the button to analyze trends.</div>
+                    <div id="trend-results" class="trend-results">
+                        <!-- Trend cards will be injected here by script.js -->
+                    </div>
+                </section>
+            </div>
+
+            <!-- Center Panel: Generator & Prompts -->
+            <div class="center-panel">
+                <section class="generator-section">
+                    <h2>Design Prompt & Generation</h2>
+
+                    <label for="design-prompt">Design Prompt:</label>
+                    <textarea id="design-prompt" placeholder="Select a suggested prompt or write your own..."></textarea>
+
+                    <label for="design-model">AI Model:</label>
+                    <select id="design-model">
+                        <option value="dall-e-3">DALL-E 3 (Highest Quality)</option>
+                        <option value="openai/gpt-4o-mini" selected>GPT-4o Mini (Fast & Creative)</option>
+                        <option value="google/imagen-4.0-fast">Imagen 4.0 (Google's Best)</option>
+                    </select>
+
+                    <button id="generate-btn" class="btn">🎨 Generate T-Shirt Design</button>
+
+                    <div class="prompts-section">
+                        <h3>Suggested Prompts</h3>
+                        <ul id="prompts-list">
+                            <!-- Prompts will be injected here by script.js -->
+                        </ul>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Right Panel: Generated Design -->
+            <div class="right-panel">
+                <section class="results-section">
+                    <h2>Generated Design</h2>
+                    <div id="status-message" class="status-message">Your generated design will appear here.</div>
+                    <div class="design-grid" id="design-results">
+                        <!-- AI-generated image will be appended here -->
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
