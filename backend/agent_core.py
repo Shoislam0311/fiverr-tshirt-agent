@@ -263,7 +263,7 @@ Now, generate 5 unique prompts based on the trend analysis:
             analyzed_trends = self.analyze_trend_images(trends)
 
             # Phase 3: Generate prompts from visual insights
-             prompts = self.generate_image_prompts(analyzed_trends)
+            prompts = self.generate_image_prompts(analyzed_trends)
 
             # Phase 4: Send comprehensive report
             self.send_telegram_report(prompts, analyzed_trends)
