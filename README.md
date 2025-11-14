@@ -74,3 +74,9 @@ The project has been restructured for better organization and scalability:
         *   `script.js`: The JavaScript for handling user interactions and API calls.
 *   **`requirements.txt`**: A list of all the Python dependencies for the project.
 *   **`README.md`**: This file, providing an overview of the project and setup instructions.
+
+## 🤖 Automated Workflow
+
+This project is configured to run automatically using GitHub Actions. The workflow, defined in `.github/workflows/agent.yml`, will execute the agent every 6 hours. This ensures that you'll receive a steady stream of fresh, trend-based design prompts delivered directly to your Telegram.
+
+You can also trigger the workflow manually by navigating to the "Actions" tab in your GitHub repository and clicking the "Run workflow" button.
